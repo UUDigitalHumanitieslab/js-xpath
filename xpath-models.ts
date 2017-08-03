@@ -12,14 +12,15 @@ export module XPathModels {
         return name in XPathAxisEnum;
     }
 
-    export type ParseError =
-        (str: string, hash: { text: string, token: string, line: number, loc: number | null, expected: string | null }) => void;
+    export class ParseError {
+        constructor(public message: string, public hash: { text: string, token: string, line: number, loc: number | null, expected: string | null }){
+        }
+    }
 
-    export let parseError: ParseError = (
+    export function parseError(
         str: string,
-        hash: { text: string, token: string, line: number, loc: number | null, expected: string | null }) => {
-        console.error(str);
-        console.debug(hash);
+        hash: { text: string, token: string, line: number, loc: number | null, expected: string | null }) {
+        throw new ParseError(str, hash);
     }
 
     export enum XPathInitialContextEnum {
