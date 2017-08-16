@@ -2,6 +2,20 @@
 export module XPathModels {
     export let isDebugging = false;
 
+    type ErrorHash = {
+        text: string,
+        token: string,
+        line: number,
+        loc: {
+            first_line: number | undefined,
+            last_line: number | undefined,
+            first_column: number | undefined,
+            last_column: number | undefined,
+            range: [number, number] | undefined
+        } | undefined,
+        expected: string | undefined
+    }
+
     export function debugLog(...args: string[]) {
         if (isDebugging) {
             console.debug(args.join(', '));
@@ -13,13 +27,13 @@ export module XPathModels {
     }
 
     export class ParseError {
-        constructor(public message: string, public hash: { text: string, token: string, line: number, loc: number | null, expected: string | null }){
+        constructor(public message: string, public hash: ErrorHash) {
         }
     }
 
     export function parseError(
         str: string,
-        hash: { text: string, token: string, line: number, loc: number | null, expected: string | null }) {
+        hash: ErrorHash) {
         throw new ParseError(str, hash);
     }
 
