@@ -5,7 +5,7 @@ describe("XPath Parser",
     () => {
         beforeAll(() => {
             // assign the shared scope
-            (parser as any).yy = { xpathModels: XPathModels };
+            parser.parser.yy = { xpathModels: XPathModels };
         });
 
         it("Works", () => {
