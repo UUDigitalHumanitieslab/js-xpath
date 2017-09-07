@@ -104,7 +104,8 @@ path_expr:  loc_path
         |   filter_expr DBL_SLASH rel_loc_path      { var steps = $3;
                                                       steps.splice(0, 0, new yy.xpathModels.XPathStep({
                                                                                 axis: yy.xpathModels.XPathAxisEnum.DESCENDANT_OR_SELF, 
-                                                                                test: yy.xpathModels.XPathTestEnum.TYPE_NODE}));
+                                                                                test: yy.xpathModels.XPathTestEnum.TYPE_NODE,
+                                                                                location: new yy.xpathModels.ParseLocation(_$)}));
                                                       $$ = new yy.xpathModels.XPathPathExpr({
                                                                     initialContext: yy.xpathModels.XPathInitialContextEnum.EXPR,
                                                                     filter: $1, steps: steps}); }
@@ -118,7 +119,8 @@ path_expr:  loc_path
                                                       var filterExpr = new yy.xpathModels.XPathFilterExpr({expr: $1});
                                                       steps.splice(0, 0, new yy.xpathModels.XPathStep({
                                                                                 axis: yy.xpathModels.XPathAxisEnum.DESCENDANT_OR_SELF, 
-                                                                                test: yy.xpathModels.XPathTestEnum.TYPE_NODE}));
+                                                                                test: yy.xpathModels.XPathTestEnum.TYPE_NODE,
+                                                                                location: new yy.xpathModels.ParseLocation(_$)}));
                                                       $$ = new yy.xpathModels.XPathPathExpr({
                                                                     initialContext: yy.xpathModels.XPathInitialContextEnum.EXPR,
                                                                     filter: filterExpr, steps: steps}); }
@@ -153,8 +155,9 @@ loc_path:   rel_loc_path                    { $$ = new yy.xpathModels.XPathPathE
                                                                       steps: $2}); }
         |   DBL_SLASH rel_loc_path          { var steps = $2;
                                               // insert descendant step into beginning
-                                              steps.splice(0, 0, new yy.xpathModels.XPathStep({axis: yy.xpathModels.XPathAxisEnum.DESCENDANT_OR_SELF, 
-                                                                                test: yy.xpathModels.XPathTestEnum.TYPE_NODE}));
+                                              steps.splice(0, 0, new yy.xpathModels.XPathStep({axis: yy.xpathModels.XPathAxisEnum.DESCENDANT_OR_SELF,
+                                                      test: yy.xpathModels.XPathTestEnum.TYPE_NODE,
+                                                      location: new yy.xpathModels.ParseLocation(_$)}));
                                               $$ = new yy.xpathModels.XPathPathExpr({initialContext: yy.xpathModels.XPathInitialContextEnum.ROOT,
                                                                       steps: steps}); }
         |   SLASH                   { $$ = new yy.xpathModels.XPathPathExpr({initialContext: yy.xpathModels.XPathInitialContextEnum.ROOT,
@@ -166,17 +169,20 @@ rel_loc_path: step                        { $$ = [$1];}
                                             path.push($3);
                                             $$ = path; }
         |   rel_loc_path DBL_SLASH step   { var path = $1;
-                                            path.push(new yy.xpathModels.XPathStep({axis: yy.xpathModels.XPathAxisEnum.DESCENDANT_OR_SELF, 
-                                                                     test: yy.xpathModels.XPathTestEnum.TYPE_NODE}));
+                                            path.push(new yy.xpathModels.XPathStep({axis: yy.xpathModels.XPathAxisEnum.DESCENDANT_OR_SELF,
+                                                    test: yy.xpathModels.XPathTestEnum.TYPE_NODE,
+                                                    location: new yy.xpathModels.ParseLocation(_$)}));
                                             path.push($3);
                                             $$ = path; }
         ;
 
 step:   step_unabbr                 { $$ = $1; }
     |   DOT                         { $$ = new yy.xpathModels.XPathStep({axis: yy.xpathModels.XPathAxisEnum.SELF, 
-                                                          test: yy.xpathModels.XPathTestEnum.TYPE_NODE}); }
+                                                          test: yy.xpathModels.XPathTestEnum.TYPE_NODE,
+                                                          location: new yy.xpathModels.ParseLocation(_$)}); }
     |   DBL_DOT                     { $$ = new yy.xpathModels.XPathStep({axis: yy.xpathModels.XPathAxisEnum.PARENT, 
-                                                          test: yy.xpathModels.XPathTestEnum.TYPE_NODE}); }
+                                                          test: yy.xpathModels.XPathTestEnum.TYPE_NODE,
+                                                          location: new yy.xpathModels.ParseLocation(_$)}); }
     ;
 
 step_unabbr:  step_unabbr predicate       { var step = $1;
@@ -187,9 +193,11 @@ step_unabbr:  step_unabbr predicate       { var step = $1;
 
 step_body: node_test                    { var nodeTest = $1; // temporary dict with appropriate args
                                           nodeTest.axis = yy.xpathModels.XPathAxisEnum.CHILD;
+                                          nodeTest.location = new yy.xpathModels.ParseLocation(_$);
                                           $$ = new yy.xpathModels.XPathStep(nodeTest); }
         |   axis_specifier node_test    { var nodeTest = $2;  // temporary dict with appropriate args
                                           nodeTest.axis = $1; // add axis
+                                          nodeTest.location = new yy.xpathModels.ParseLocation(_$);
                                           $$ = new yy.xpathModels.XPathStep(nodeTest); }
         ;
 
@@ -210,4 +218,3 @@ node_test:  QNAME                 { $$ = {"test": yy.xpathModels.XPathTestEnum.N
 literal: STR                       { $$ = new yy.xpathModels.XPathStringLiteral($1); }
     |   NUM                       { $$ = new yy.xpathModels.XPathNumericLiteral($1); }
     ;
-  

@@ -163,7 +163,8 @@ case 32:
  var steps = $$[$0];
                                                       steps.splice(0, 0, new yy.xpathModels.XPathStep({
                                                                                 axis: yy.xpathModels.XPathAxisEnum.DESCENDANT_OR_SELF, 
-                                                                                test: yy.xpathModels.XPathTestEnum.TYPE_NODE}));
+                                                                                test: yy.xpathModels.XPathTestEnum.TYPE_NODE,
+                                                                                location: new yy.xpathModels.ParseLocation(_$)}));
                                                       this.$ = new yy.xpathModels.XPathPathExpr({
                                                                     initialContext: yy.xpathModels.XPathInitialContextEnum.EXPR,
                                                                     filter: $$[$0-2], steps: steps}); 
@@ -181,7 +182,8 @@ case 34:
                                                       var filterExpr = new yy.xpathModels.XPathFilterExpr({expr: $$[$0-2]});
                                                       steps.splice(0, 0, new yy.xpathModels.XPathStep({
                                                                                 axis: yy.xpathModels.XPathAxisEnum.DESCENDANT_OR_SELF, 
-                                                                                test: yy.xpathModels.XPathTestEnum.TYPE_NODE}));
+                                                                                test: yy.xpathModels.XPathTestEnum.TYPE_NODE,
+                                                                                location: new yy.xpathModels.ParseLocation(_$)}));
                                                       this.$ = new yy.xpathModels.XPathPathExpr({
                                                                     initialContext: yy.xpathModels.XPathInitialContextEnum.EXPR,
                                                                     filter: filterExpr, steps: steps}); 
@@ -224,8 +226,9 @@ break;
 case 44:
  var steps = $$[$0];
                                               // insert descendant step into beginning
-                                              steps.splice(0, 0, new yy.xpathModels.XPathStep({axis: yy.xpathModels.XPathAxisEnum.DESCENDANT_OR_SELF, 
-                                                                                test: yy.xpathModels.XPathTestEnum.TYPE_NODE}));
+                                              steps.splice(0, 0, new yy.xpathModels.XPathStep({axis: yy.xpathModels.XPathAxisEnum.DESCENDANT_OR_SELF,
+                                                      test: yy.xpathModels.XPathTestEnum.TYPE_NODE,
+                                                      location: new yy.xpathModels.ParseLocation(_$)}));
                                               this.$ = new yy.xpathModels.XPathPathExpr({initialContext: yy.xpathModels.XPathInitialContextEnum.ROOT,
                                                                       steps: steps}); 
 break;
@@ -243,8 +246,9 @@ case 47:
 break;
 case 48:
  var path = $$[$0-2];
-                                            path.push(new yy.xpathModels.XPathStep({axis: yy.xpathModels.XPathAxisEnum.DESCENDANT_OR_SELF, 
-                                                                     test: yy.xpathModels.XPathTestEnum.TYPE_NODE}));
+                                            path.push(new yy.xpathModels.XPathStep({axis: yy.xpathModels.XPathAxisEnum.DESCENDANT_OR_SELF,
+                                                    test: yy.xpathModels.XPathTestEnum.TYPE_NODE,
+                                                    location: new yy.xpathModels.ParseLocation(_$)}));
                                             path.push($$[$0]);
                                             this.$ = path; 
 break;
@@ -253,11 +257,13 @@ case 49: case 53:
 break;
 case 50:
  this.$ = new yy.xpathModels.XPathStep({axis: yy.xpathModels.XPathAxisEnum.SELF, 
-                                                          test: yy.xpathModels.XPathTestEnum.TYPE_NODE}); 
+                                                          test: yy.xpathModels.XPathTestEnum.TYPE_NODE,
+                                                          location: new yy.xpathModels.ParseLocation(_$)}); 
 break;
 case 51:
  this.$ = new yy.xpathModels.XPathStep({axis: yy.xpathModels.XPathAxisEnum.PARENT, 
-                                                          test: yy.xpathModels.XPathTestEnum.TYPE_NODE}); 
+                                                          test: yy.xpathModels.XPathTestEnum.TYPE_NODE,
+                                                          location: new yy.xpathModels.ParseLocation(_$)}); 
 break;
 case 52:
  var step = $$[$0-1];
@@ -267,11 +273,13 @@ break;
 case 54:
  var nodeTest = $$[$0]; // temporary dict with appropriate args
                                           nodeTest.axis = yy.xpathModels.XPathAxisEnum.CHILD;
+                                          nodeTest.location = new yy.xpathModels.ParseLocation(_$);
                                           this.$ = new yy.xpathModels.XPathStep(nodeTest); 
 break;
 case 55:
  var nodeTest = $$[$0];  // temporary dict with appropriate args
                                           nodeTest.axis = $$[$0-1]; // add axis
+                                          nodeTest.location = new yy.xpathModels.ParseLocation(_$);
                                           this.$ = new yy.xpathModels.XPathStep(nodeTest); 
 break;
 case 56:
