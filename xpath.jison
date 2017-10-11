@@ -215,6 +215,6 @@ node_test:  QNAME                 { $$ = {"test": yy.xpathModels.XPathTestEnum.N
         |   NODETYPE_PROCINSTR LPAREN STR RPAREN  { $$ = {"test": yy.xpathModels.XPathTestEnum.TYPE_PROCESSING_INSTRUCTION, "literal": $3}; }
         ;
 
-literal: STR                       { $$ = new yy.xpathModels.XPathStringLiteral($1); }
-    |   NUM                       { $$ = new yy.xpathModels.XPathNumericLiteral($1); }
+literal: STR                       { $$ = new yy.xpathModels.XPathStringLiteral($1, new yy.xpathModels.ParseLocation(_$)); }
+    |   NUM                       { $$ = new yy.xpathModels.XPathNumericLiteral($1, new yy.xpathModels.ParseLocation(_$)); }
     ;

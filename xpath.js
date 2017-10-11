@@ -313,10 +313,10 @@ case 65:
  this.$ = {"test": yy.xpathModels.XPathTestEnum.TYPE_PROCESSING_INSTRUCTION, "literal": $$[$0-1]}; 
 break;
 case 66:
- this.$ = new yy.xpathModels.XPathStringLiteral($$[$0]); 
+ this.$ = new yy.xpathModels.XPathStringLiteral($$[$0], new yy.xpathModels.ParseLocation(_$)); 
 break;
 case 67:
- this.$ = new yy.xpathModels.XPathNumericLiteral($$[$0]); 
+ this.$ = new yy.xpathModels.XPathNumericLiteral($$[$0], new yy.xpathModels.ParseLocation(_$)); 
 break;
 }
 },
