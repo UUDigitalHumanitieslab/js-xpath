@@ -1,0 +1,35 @@
+{
+  "name": "ts-xpath",
+  "version": "0.0.1",
+  "description": "XPath Parser for TypeScript",
+  "main": "dist/xpath.js",
+  "types": "dist/xpath.d.ts",
+  "scripts": {
+    "prepublish": "npm run build",
+    "jison": "jison src/jison/xpath.jison src/jison/xpath.jisonlex -o src/jison/xpath.js -m commonjs",
+    "tsc": "tsc",
+    "build": "npm run jison && npm run tsc",
+    "test": "echo no tests!"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/UUDigitalHumanitieslab/ts-xpath.git"
+  },
+  "keywords": [
+    "xpath",
+    "typescript",
+    "jison",
+    "parser"
+  ],
+  "author": "Sheean Spoel (Utrecht University, Digital Humanities Lab)",
+  "license": "BSD-3-Clause",
+  "bugs": {
+    "url": "https://github.com/UUDigitalHumanitieslab/ts-xpath/issues"
+  },
+  "homepage": "https://github.com/UUDigitalHumanitieslab/ts-xpath#readme",
+  "devDependencies": {
+    "jison": "0.4.17",
+    "karma": "^1.7.1",
+    "typescript": "^2.5.3"
+  }
+}

@@ -2,7 +2,7 @@
 export module XPathModels {
     export let isDebugging = false;
 
-    type ErrorHash = {
+    export type ErrorHash = {
         text: string,
         token: string,
         line: number,
@@ -70,7 +70,7 @@ export module XPathModels {
         TYPE_PROCESSING_INSTRUCTION = "processing-instruction"
     }
 
-    interface IXPathExpression {
+    export interface IXPathExpression {
         toXPath(): string;
     }
 
@@ -91,7 +91,7 @@ export module XPathModels {
     }
 
     export type XPathOperation = XPathBoolExpr | XPathEqExpr | XPathCmpExpr | XPathArithExpr | XPathUnionExpr | XPathNumNegExpr;
-    abstract class XPathOperationBase<T> implements IXPathExpression {
+    export abstract class XPathOperationBase<T> implements IXPathExpression {
         type: 'operation' = 'operation';
         operationType: T;
 
@@ -99,7 +99,7 @@ export module XPathModels {
         abstract toXPath(): string;
     }
 
-    abstract class XPathOperator<T> extends XPathOperationBase<T>  {
+    export abstract class XPathOperator<T> extends XPathOperationBase<T>  {
         operationType: T;
         public parens: boolean = false;
         constructor(public properties: { type: T, left: XPathExpression, right: XPathExpression }) {
@@ -123,10 +123,10 @@ export module XPathModels {
     }
 
     // TODO: is this mapping really needed? Why not always use the same?
-    type XPathBoolOperator = 'or' | 'and';
-    type XPathEqOperator = '==' | '!=';
-    type XPathCmpOperator = '<' | '<=' | '>' | '>=';
-    type XPathArithOperator = '+' | '-' | '*' | '/' | '%';
+    export type XPathBoolOperator = 'or' | 'and';
+    export type XPathEqOperator = '==' | '!=';
+    export type XPathCmpOperator = '<' | '<=' | '>' | '>=';
+    export type XPathArithOperator = '+' | '-' | '*' | '/' | '%';
 
     export class XPathBoolExpr extends XPathOperator<XPathBoolOperator> {
         expressionTypeEnumToXPathLiteral(type: XPathBoolOperator) {
@@ -349,7 +349,7 @@ export module XPathModels {
     /*
      * Literals
      */
-    type XPathLiteral = XPathStringLiteral | XPathNumericLiteral;
+    export type XPathLiteral = XPathStringLiteral | XPathNumericLiteral;
     export class XPathStringLiteral implements IXPathExpression {
         type: 'string' = 'string';
         value: string;
