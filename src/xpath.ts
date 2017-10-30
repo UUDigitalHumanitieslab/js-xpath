@@ -1,5 +1,6 @@
 import { XPathModels } from './xpath-models';
 import * as jison from './jison/xpath';
+export * from './xpath-models';
 
 // assign the shared scope
 jison.parser.yy = {
@@ -7,7 +8,15 @@ jison.parser.yy = {
     parseError: XPathModels.parseError
 };
 
-export default class XPathParser {
+/**
+ * Class for parsing an XPath string.
+ */
+export class XPathParser {
+    /**
+     * Parse an XPath string and returns a parse tree or throw a parse exception.
+     * @param input XPath string to parse
+     * @exception @see {XPathModels.ParseError}
+     */
     public parse(input: string): XPathModels.XPathExpression {
         return jison.parse(input);
     }

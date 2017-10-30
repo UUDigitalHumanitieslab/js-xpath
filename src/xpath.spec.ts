@@ -1,4 +1,4 @@
-import XPathParser from './xpath';
+import { XPathParser } from './xpath';
 
 describe("XPath Parser",
     () => {
