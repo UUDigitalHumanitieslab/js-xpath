@@ -1,5 +1,4 @@
 import XPathParser from './xpath';
-import { XPathModels } from './xpath-models';
 
 describe("XPath Parser",
     () => {

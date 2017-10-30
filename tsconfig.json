@@ -2,7 +2,6 @@
     "compilerOptions": {
         "target": "ES5",
         "module": "commonjs",
-        "allowJs": true,
         "declaration": true,
         "noFallthroughCasesInSwitch": true,
         "noImplicitAny": true,
@@ -13,6 +12,7 @@
     "exclude": [
         "dist",
         "node_modules",
-        ".npm"
+        ".npm",
+        "**/*.spec.ts"
     ]
 }

@@ -1,4 +1,11 @@
 # ts-xpath
-This is a modified version of [js-xpath](https://github.com/dimagi/js-xpath). It is adapted for use with TypeScript and is compiled using `grunt jison`.
+This is a modified version of [js-xpath](https://github.com/dimagi/js-xpath). It is adapted for use with TypeScript and is compiled using `npm run build`.
 
-TODO: it might be sensible to move this to a separate (fork) project.
+## Usage
+
+```typescript
+import XPathParser from 'ts-xpath';
+
+let parser = new XPathParser();
+let parsed = parser.parse("//node");
+```

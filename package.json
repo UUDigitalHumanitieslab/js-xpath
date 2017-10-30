@@ -8,8 +8,9 @@
     "prepublish": "npm run build",
     "jison": "jison src/jison/xpath.jison src/jison/xpath.jisonlex -o src/jison/xpath.js -m commonjs",
     "tsc": "tsc",
-    "build": "npm run jison && npm run tsc",
-    "test": "echo no tests!"
+    "build": "npm run jison && WEBPACK_ENV=build webpack && npm run test",
+    "test": "karma start",
+    "dev": "WEBPACK_ENV=dev webpack --progress --colors --watch"
   },
   "repository": {
     "type": "git",
@@ -28,8 +29,20 @@
   },
   "homepage": "https://github.com/UUDigitalHumanitieslab/ts-xpath#readme",
   "devDependencies": {
+    "@types/es6-shim": "^0.31.35",
+    "@types/jasmine": "^2.6.2",
+    "@types/karma": "^1.7.1",
+    "jasmine": "^2.8.0",
     "jison": "0.4.17",
     "karma": "^1.7.1",
+    "karma-jasmine": "^1.1.0",
+    "karma-phantomjs-launcher": "^1.0.4",
+    "karma-typescript": "^3.0.8",
+    "phantomjs": "^2.1.7",
+    "ts-loader": "^3.1.0",
+    "webpack": "^3.8.1"
+  },
+  "dependencies": {
     "typescript": "^2.5.3"
   }
 }
