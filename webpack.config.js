@@ -1,6 +1,9 @@
 module.exports = {
     entry: './src/xpath.ts',
-    output: { filename: './dist/xpath.js' },
+    output: {
+        filename: './dist/xpath.js',
+        libraryTarget: 'umd'
+    },
     resolve: {
         extensions: ['.ts', '.tsx', '.js']
     },
