@@ -1,4 +1,24 @@
 export declare module XPathModels {
+    interface HashtagConfig {
+        /**
+         * @param namespace - the namespace used in hashtag
+         * @return truthy value
+         */
+        isValidNamespace: (namespace: string) => boolean;
+        /**
+         * @param hashtagExpr string representation of hashtag ex. #form/question
+         * @return the XPath or falsy value if no corresponding XPath found
+         */
+        hashtagToXPath: (hashtagExpr: string) => string | false;
+        /**
+         * @param xpath - XPath object (can be any of the objects defined in xpm
+         * @returns text representation of XPath in hashtag format (default
+                    implementation is to just return the XPath)
+         */
+        toHashtag: (xpath: IXPathExpression) => string;
+    }
+    let DefaultHashtagConfig: HashtagConfig;
+    let CurrentHashtagConfig: HashtagConfig;
     let isDebugging: boolean;
     type ErrorHash = {
         text: string;
@@ -54,7 +74,7 @@ export declare module XPathModels {
     interface IXPathExpression {
         toXPath(): string;
     }
-    type XPathExpression = XPathBaseExpression | XPathOperation | XPathPathExpr | XPathFilterExpr;
+    type XPathExpression = XPathBaseExpression | XPathOperation | XPathPathExpr | XPathFilterExpr | XPathHashtagExpression;
     type XPathBaseExpression = XPathFuncExpr | XPathVariableReference | XPathLiteral;
     class XPathVariableReference implements IXPathExpression {
         value: string;
@@ -173,6 +193,7 @@ export declare module XPathModels {
         private mainXPath();
         private predicateXPath();
         toXPath(): string;
+        toString(): string;
     }
     class XPathFilterExpr implements IXPathExpression {
         private properties;
@@ -184,6 +205,18 @@ export declare module XPathModels {
         });
         getChildren(): XPathExpression[];
         toXPath(): string;
+    }
+    class XPathHashtagExpression implements IXPathExpression {
+        initialContext: XPathInitialContextEnum;
+        namespace: string;
+        steps: XPathStep[];
+        constructor(definition: {
+            initialContext: XPathInitialContextEnum;
+            namespace: string;
+            steps: XPathStep[] | null;
+        });
+        toXPath(): string;
+        toHashtag(): string;
     }
     type XPathLiteral = XPathStringLiteral | XPathNumericLiteral;
     class XPathStringLiteral implements IXPathExpression {

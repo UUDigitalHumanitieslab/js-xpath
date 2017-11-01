@@ -132,10 +132,10 @@ filter_expr:  base_expr predicate     { $$ = new yy.xpathModels.XPathFilterExpr(
                                         $$ = filterExpr; }
         ;
 
-hashtag_expr:  HASH QNAME SLASH hashtag_path              { $$ = new yy.xpathModels.HashtagExpr({initialContext: yy.xpathModels.XPathInitialContextEnum.HASHTAG,
+hashtag_expr:  HASH QNAME SLASH hashtag_path              { $$ = new yy.xpathModels.XPathHashtagExpression({initialContext: yy.xpathModels.XPathInitialContextEnum.HASHTAG,
                                                                       namespace: $2,
                                                                       steps: $4}); }
-        |  HASH QNAME                                     { $$ = new yy.xpathModels.HashtagExpr({initialContext: yy.xpathModels.XPathInitialContextEnum.HASHTAG,
+        |  HASH QNAME                                     { $$ = new yy.xpathModels.XPathHashtagExpression({initialContext: yy.xpathModels.XPathInitialContextEnum.HASHTAG,
                                                                       namespace: $2,
                                                                       steps: []}); }
         ;

@@ -1,5 +1,38 @@
 // based on https://github.com/dimagi/js-xpath/blob/master/src/models.js
 export module XPathModels {
+    export interface HashtagConfig {
+        /** 
+         * @param namespace - the namespace used in hashtag
+         * @return truthy value
+         */
+        isValidNamespace: (namespace: string) => boolean,
+        /**
+         * @param hashtagExpr string representation of hashtag ex. #form/question
+         * @return the XPath or falsy value if no corresponding XPath found
+         */
+        hashtagToXPath: (hashtagExpr: string) => string | false,
+        /**
+         * @param xpath - XPath object (can be any of the objects defined in xpm
+         * @returns text representation of XPath in hashtag format (default
+                    implementation is to just return the XPath)
+         */
+        toHashtag: (xpath: IXPathExpression) => string
+    }
+
+    export let DefaultHashtagConfig: HashtagConfig = {
+        isValidNamespace: function (namespace) {
+            return false;
+        },
+        hashtagToXPath: function (hashtagExpr) {
+            throw new Error("This should be overridden");
+        },
+        toHashtag: function (xpath) {
+            return xpath.toXPath();
+        }
+    };
+
+    export let CurrentHashtagConfig: HashtagConfig;
+
     export let isDebugging = false;
 
     export type ErrorHash = {
@@ -74,7 +107,7 @@ export module XPathModels {
         toXPath(): string;
     }
 
-    export type XPathExpression = XPathBaseExpression | XPathOperation | XPathPathExpr | XPathFilterExpr /* TODO: | XPathHashtagFilter */;
+    export type XPathExpression = XPathBaseExpression | XPathOperation | XPathPathExpr | XPathFilterExpr | XPathHashtagExpression;
     export type XPathBaseExpression = //{ parens: boolean, expr: XPathExpression } /* TODO: correct? */
         | XPathFuncExpr
         | XPathVariableReference
@@ -316,6 +349,23 @@ export module XPathModels {
         public toXPath() {
             return this.mainXPath() + this.predicateXPath();
         }
+
+        public toString() {
+            var stringArray = [];
+
+            stringArray.push("{step:");
+            stringArray.push(String(this.properties.axis));
+            stringArray.push(",");
+            stringArray.push(this.testString());
+            if (this.predicates.length > 0) {
+                stringArray.push(",{");
+                stringArray.push(this.predicates.join(","));
+                stringArray.push("}");
+            }
+
+            stringArray.push("}");
+            return stringArray.join("");
+        };
     }
 
     export class XPathFilterExpr implements IXPathExpression {
@@ -343,6 +393,37 @@ export module XPathModels {
                 expr = "(" + expr + ")";
             }
             return expr + predicates;
+        }
+    }
+
+    export class XPathHashtagExpression implements IXPathExpression {
+        public initialContext: XPathInitialContextEnum;
+        public namespace: string;
+        public steps: XPathStep[];
+
+        constructor(definition: {
+            initialContext: XPathInitialContextEnum,
+            namespace: string,
+            steps: XPathStep[] | null
+        }) {
+            this.initialContext = definition.initialContext;
+            this.namespace = definition.namespace;
+            this.steps = definition.steps || [];
+        }
+
+        public toXPath() {
+            return CurrentHashtagConfig.hashtagToXPath(this.toHashtag()) || "";
+        }
+
+        public toHashtag() {
+            let parts = [this.namespace].concat(this.steps.map(step => step.toString())),
+                ret: string[] = [];
+            for (let i = 0; i < parts.length; i++) {
+                // hashtag to start then /
+                ret.push((i === 0) ? '#' : "/");
+                ret.push(parts[i]);
+            }
+            return ret.join("");
         }
     }
 

@@ -12,12 +12,16 @@ jison.parser.yy = {
  * Class for parsing an XPath string.
  */
 export class XPathParser {
+    constructor(public hashtagConfig: XPathModels.HashtagConfig = XPathModels.DefaultHashtagConfig) {
+    }
+
     /**
      * Parse an XPath string and returns a parse tree or throw a parse exception.
      * @param input XPath string to parse
      * @exception @see {XPathModels.ParseError}
      */
     public parse(input: string): XPathModels.XPathExpression {
+        XPathModels.CurrentHashtagConfig = this.hashtagConfig;
         return jison.parse(input);
     }
 }

@@ -91,6 +91,17 @@ Object.defineProperty(exports, "__esModule", { value: true });
 // based on https://github.com/dimagi/js-xpath/blob/master/src/models.js
 var XPathModels;
 (function (XPathModels) {
+    XPathModels.DefaultHashtagConfig = {
+        isValidNamespace: function (namespace) {
+            return false;
+        },
+        hashtagToXPath: function (hashtagExpr) {
+            throw new Error("This should be overridden");
+        },
+        toHashtag: function (xpath) {
+            return xpath.toXPath();
+        }
+    };
     XPathModels.isDebugging = false;
     function debugLog() {
         var args = [];
@@ -389,6 +400,21 @@ var XPathModels;
         XPathStep.prototype.toXPath = function () {
             return this.mainXPath() + this.predicateXPath();
         };
+        XPathStep.prototype.toString = function () {
+            var stringArray = [];
+            stringArray.push("{step:");
+            stringArray.push(String(this.properties.axis));
+            stringArray.push(",");
+            stringArray.push(this.testString());
+            if (this.predicates.length > 0) {
+                stringArray.push(",{");
+                stringArray.push(this.predicates.join(","));
+                stringArray.push("}");
+            }
+            stringArray.push("}");
+            return stringArray.join("");
+        };
+        ;
         return XPathStep;
     }());
     XPathModels.XPathStep = XPathStep;
@@ -416,6 +442,27 @@ var XPathModels;
         return XPathFilterExpr;
     }());
     XPathModels.XPathFilterExpr = XPathFilterExpr;
+    var XPathHashtagExpression = /** @class */ (function () {
+        function XPathHashtagExpression(definition) {
+            this.initialContext = definition.initialContext;
+            this.namespace = definition.namespace;
+            this.steps = definition.steps || [];
+        }
+        XPathHashtagExpression.prototype.toXPath = function () {
+            return XPathModels.CurrentHashtagConfig.hashtagToXPath(this.toHashtag()) || "";
+        };
+        XPathHashtagExpression.prototype.toHashtag = function () {
+            var parts = [this.namespace].concat(this.steps.map(function (step) { return step.toString(); })), ret = [];
+            for (var i = 0; i < parts.length; i++) {
+                // hashtag to start then /
+                ret.push((i === 0) ? '#' : "/");
+                ret.push(parts[i]);
+            }
+            return ret.join("");
+        };
+        return XPathHashtagExpression;
+    }());
+    XPathModels.XPathHashtagExpression = XPathHashtagExpression;
     var XPathStringLiteral = /** @class */ (function () {
         function XPathStringLiteral(value, location) {
             this.location = location;
@@ -666,7 +713,9 @@ jison.parser.yy = {
  * Class for parsing an XPath string.
  */
 var XPathParser = /** @class */ (function () {
-    function XPathParser() {
+    function XPathParser(hashtagConfig) {
+        if (hashtagConfig === void 0) { hashtagConfig = xpath_models_1.XPathModels.DefaultHashtagConfig; }
+        this.hashtagConfig = hashtagConfig;
     }
     /**
      * Parse an XPath string and returns a parse tree or throw a parse exception.
@@ -674,6 +723,7 @@ var XPathParser = /** @class */ (function () {
      * @exception @see {XPathModels.ParseError}
      */
     XPathParser.prototype.parse = function (input) {
+        xpath_models_1.XPathModels.CurrentHashtagConfig = this.hashtagConfig;
         return jison.parse(input);
     };
     return XPathParser;
@@ -884,12 +934,12 @@ case 36:
                                         this.$ = filterExpr; 
 break;
 case 37:
- this.$ = new yy.xpathModels.HashtagExpr({initialContext: yy.xpathModels.XPathInitialContextEnum.HASHTAG,
+ this.$ = new yy.xpathModels.XPathHashtagExpression({initialContext: yy.xpathModels.XPathInitialContextEnum.HASHTAG,
                                                                       namespace: $$[$0-2],
                                                                       steps: $$[$0]}); 
 break;
 case 38:
- this.$ = new yy.xpathModels.HashtagExpr({initialContext: yy.xpathModels.XPathInitialContextEnum.HASHTAG,
+ this.$ = new yy.xpathModels.XPathHashtagExpression({initialContext: yy.xpathModels.XPathInitialContextEnum.HASHTAG,
                                                                       namespace: $$[$0],
                                                                       steps: []}); 
 break;

@@ -197,12 +197,12 @@ case 36:
                                         this.$ = filterExpr; 
 break;
 case 37:
- this.$ = new yy.xpathModels.HashtagExpr({initialContext: yy.xpathModels.XPathInitialContextEnum.HASHTAG,
+ this.$ = new yy.xpathModels.XPathHashtagExpression({initialContext: yy.xpathModels.XPathInitialContextEnum.HASHTAG,
                                                                       namespace: $$[$0-2],
                                                                       steps: $$[$0]}); 
 break;
 case 38:
- this.$ = new yy.xpathModels.HashtagExpr({initialContext: yy.xpathModels.XPathInitialContextEnum.HASHTAG,
+ this.$ = new yy.xpathModels.XPathHashtagExpression({initialContext: yy.xpathModels.XPathInitialContextEnum.HASHTAG,
                                                                       namespace: $$[$0],
                                                                       steps: []}); 
 break;
