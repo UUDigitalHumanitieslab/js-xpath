@@ -3,6 +3,10 @@ This is a modified version of [js-xpath](https://github.com/dimagi/js-xpath). It
 
 ## Usage
 
+```
+npm install ts-xpath
+```
+
 ```typescript
 import { XPathParser } from 'ts-xpath';
 

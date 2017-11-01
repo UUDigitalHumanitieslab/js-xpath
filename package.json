@@ -5,7 +5,7 @@
   "main": "dist/xpath.js",
   "types": "dist/xpath.d.ts",
   "scripts": {
-    "prepublish": "npm run build",
+    "prepare": "npm run build",
     "jison": "jison src/jison/xpath.jison src/jison/xpath.jisonlex -o src/jison/xpath.js -m commonjs",
     "tsc": "tsc",
     "build": "npm run jison && WEBPACK_ENV=build webpack && npm run test",
