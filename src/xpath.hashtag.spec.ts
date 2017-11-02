@@ -34,17 +34,17 @@ describe('XPath Hashtags', () => {
         };
     }
 
-    let xpath: XPathParser;
+    let parser: XPathParser;
     beforeEach(() => {
-        xpath = new XPathParser();
+        parser = new XPathParser();
     });
 
     function runCommon(testCases: { [input: string]: string }, validHashtagNamespaces: string[]) {
-        xpath.hashtagConfig = makeXPathConfig(validHashtagNamespaces, {});
+        parser.hashtagConfig = makeXPathConfig(validHashtagNamespaces, {});
         for (var i in testCases) {
             if (testCases.hasOwnProperty(i)) {
                 try {
-                    expect(xpath.parse(i).toString()).toEqual(testCases[i], "" + i + " parsed correctly.");
+                    expect(parser.parse(i).toString()).toEqual(testCases[i], "" + i + " parsed correctly.");
                 } catch (err) {
                     fail("" + err + " for input: " + i);
                 }
@@ -53,28 +53,28 @@ describe('XPath Hashtags', () => {
     }
 
     function runFailures(testCases: { [input: string]: new (...args: any[]) => Error }, validHashtagNamespaces: string[]) {
-        function tmpFunc() {
-            xpath.parse(i);
-        }
-        xpath.hashtagConfig = makeXPathConfig(validHashtagNamespaces, {});
-        for (var i in testCases) {
+        parser.hashtagConfig = makeXPathConfig(validHashtagNamespaces, {});
+        for (let i in testCases) {
             if (testCases.hasOwnProperty(i)) {
-                expect(tmpFunc).toThrowError(testCases[i], "" + i + " correctly failed to parse.");
+                expect(() => {
+                    parser.parse(i);
+                    console.error(`${i} failed to fail.`);
+                }).toThrow();
             }
         }
     }
 
     function runGeneratorTests(testcases: { [input: string]: string }, translationDict: { [input: string]: string }, namespaces: string[]) {
-        xpath.hashtagConfig = makeXPathConfig(namespaces, translationDict);
+        parser.hashtagConfig = makeXPathConfig(namespaces, translationDict);
         for (var i in testcases) {
             if (testcases.hasOwnProperty(i)) {
                 try {
-                    let parsed = xpath.parse(i);
+                    let parsed = parser.parse(i);
                     expect(parsed.toXPath()).toEqual(testcases[i], "" + i + " generated correctly.");
                     // It seems reasonable to expect that the generated xpath
                     // should parse back to the same object, although this may 
                     // not always hold true.
-                    // TODO: expect(parsed.toString()).toEqual(xpath.parse(parsed.toHashtag()).toString(), "" + i + " produced same result when reparsed.");
+                    expect(parsed.toString()).toEqual(parser.parse(parsed.toHashtag()).toString(), "" + i + " produced same result when reparsed.");
                 } catch (err) {
                     fail("" + err + " for input: " + i);
                 }
@@ -82,7 +82,7 @@ describe('XPath Hashtags', () => {
         }
     }
 
-    xit("parses hashtags", function () {
+    it("parses hashtags", function () {
         var namespaces = ['form', 'case'];
         runCommon({
             "#form/question": "{hashtag-expr:form,{question}}",
@@ -97,8 +97,8 @@ describe('XPath Hashtags', () => {
         }, namespaces);
     });
 
-    xit("parses generator hashtags", function () {
-        var transDict = {
+    it("parses generator hashtags", function () {
+        let transDict = {
             '#form/question': '/data/question',
             '#form/group/question': '/data/group/question',
             '#case/question': "instance('casedb')/cases/case[@case_id = case_id]/question",
@@ -115,14 +115,14 @@ describe('XPath Hashtags', () => {
     });
 
     it("parses hashtags with no xpath", function () {
-        xpath.hashtagConfig = makeXPathConfig(['form', 'case'], {});
+        parser.hashtagConfig = makeXPathConfig(['form', 'case'], {});
 
-        var testCases = {
+        let testCases = {
             "#form/question1": "/data/question1",
         };
         for (let i in testCases) {
             if (testCases.hasOwnProperty(i)) {
-                let parsed = xpath.parse(i);
+                let parsed = parser.parse(i);
                 try {
                     parsed.toXPath();
                     fail("This should not be translatable");
@@ -132,8 +132,8 @@ describe('XPath Hashtags', () => {
         }
     });
 
-    xit("parses from xpath to hashtag", function () {
-        var translationDict = {
+    it("parses from xpath to hashtag", function () {
+        let translationDict = {
             '#form': '/data',
             '#form/question': '/data/question',
             '#form/question2': '/data/question2',
@@ -141,9 +141,9 @@ describe('XPath Hashtags', () => {
             '#case/question': "instance('casedb')/cases/case[@case_id = case_id]/question",
         };
 
-        xpath.hashtagConfig = makeXPathConfig(['form', 'case'], translationDict);
+        parser.hashtagConfig = makeXPathConfig(['form', 'case'], translationDict);
 
-        var testcases = {
+        let testcases: { [input: string]: string } = {
             "/data": "#form",
             "/data/question": "#form/question",
             "/data/question + /data/question2": "#form/question + #form/question2",
@@ -156,8 +156,8 @@ describe('XPath Hashtags', () => {
 
         for (let i in testcases) {
             if (testcases.hasOwnProperty(i)) {
-                let parsed = xpath.parse(i);
-                // TODO: expect(parsed.toHashtag()).toEqual(testcases[i]);
+                let parsed = parser.parse(i);
+                expect(parsed.toHashtag()).toEqual(testcases[i]);
             }
         }
     });

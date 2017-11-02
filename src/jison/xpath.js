@@ -283,7 +283,7 @@ case 55:
                                           this.$ = new yy.xpathModels.XPathStep(nodeTest); 
 break;
 case 56:
- this.$ = yy.xpathModels.validateAxisName($$[$0-1]); 
+ this.$ = yy.xpathModels.testAxisName($$[$0-1]); 
 break;
 case 57:
  this.$ = yy.xpathModels.XPathAxisEnum.ATTRIBUTE; 

@@ -1,4 +1,4 @@
-import { XPathParser } from './xpath';
+import { XPathParser, XPathModels } from './xpath';
 
 /*
  * This test package is heavily adapted from the previous test suite:
@@ -23,7 +23,7 @@ describe('XPath Generators', () => {
                     // should parse back to the same object, although this may 
                     // not always hold true.
                     expect(parsed.toString()).toEqual(parser.parse(parsed.toXPath()).toString(), "XPath " + i + " produced same result when reparsed.");
-                    // TODO: expect(parsed.toString()).toEqual(xpath.parse(parsed.toHashtag()).toString(), "Hashtag " + i + " produced same result when reparsed.");
+                    expect(parsed.toString()).toEqual(parser.parse(parsed.toHashtag()).toString(), "Hashtag " + i + " produced same result when reparsed.");
                 } catch (err) {
                     fail("" + err + " for input: " + i);
                 }
@@ -31,9 +31,9 @@ describe('XPath Generators', () => {
         }
     }
 
-    xit("generator numbers", () => {
+    it("generator numbers", () => {
         runGeneratorTests({
-            "123.": "123.",
+            "123.": "123",
             "734.04": "734.04",
             "0.12345": "0.12345",
             ".666": "0.666",
@@ -41,9 +41,9 @@ describe('XPath Generators', () => {
             "1230000000000000000000": "1230000000000000000000",
             "0.00000000000000000123": "0.00000000000000000123",
             "0": "0",
-            "0.": "0.",
-            ".0": "0.",
-            "0.0": "0."
+            "0.": "0",
+            ".0": "0",
+            "0.0": "0"
         });
     });
 
@@ -59,7 +59,7 @@ describe('XPath Generators', () => {
         });
     });
 
-    xit("generator variables", () => {
+    it("generator variables", () => {
         runGeneratorTests({
             "$var": "$var",
             "$qualified:name": "$qualified:name"
@@ -74,7 +74,7 @@ describe('XPath Generators', () => {
         });
     });
 
-    xit("generator operators", () => {
+    it("generator operators", () => {
         runGeneratorTests({
             "5 + 5": "5 + 5",
             "-5": "-5",
@@ -113,7 +113,7 @@ describe('XPath Generators', () => {
         });
     });
 
-    xit("generator operator precedence", () => {
+    it("generator operator precedence", () => {
         runGeneratorTests({
             "1 < 2 = 3 > 4 and 5 <= 6 != 7 >= 8 or 9 and 10": "1 < 2 = 3 > 4 and 5 <= 6 != 7 >= 8 or 9 and 10",
             "1 * 2 + 3 div 4 < 5 mod 6 | 7 - 8": "1 * 2 + 3 div 4 < 5 mod 6 | 7 - 8",
@@ -174,7 +174,7 @@ describe('XPath Generators', () => {
         });
     });
 
-    xit("generator axes", () => {
+    it("generator axes", () => {
         runGeneratorTests({
             "child::*": "*",
             "parent::*": "parent::*",
@@ -195,7 +195,7 @@ describe('XPath Generators', () => {
         });
     });
 
-    xit("generator predicates", () => {
+    it("generator predicates", () => {
         runGeneratorTests({
             "descendant::node()[@attr='blah'][4]": "descendant::node()[@attr = 'blah'][4]",
         });
@@ -215,7 +215,7 @@ describe('XPath Generators', () => {
         });
     });
 
-    xit("generator real world examples", () => {
+    it("generator real world examples", () => {
         runGeneratorTests({
             "/patient/sex = 'male' and /patient/age > 15": "/patient/sex = 'male' and /patient/age > 15",
             "../jr:hist-data/labs[@type=\"cd4\"]": "../jr:hist-data/labs[@type = \"cd4\"]",
@@ -223,19 +223,19 @@ describe('XPath Generators', () => {
         });
     });
 
-    xit("generate without predicates", () => {
-        let testCases = {
+    it("generate without predicates", () => {
+        let testCases: { [path: string]: string } = {
             "/data/blue": "/data/blue",
             "/data/blue[$random = 'predicate']": "/data/blue",
         };
-        for (let i in testCases) {
-            if (testCases.hasOwnProperty(i)) {
+        for (let path in testCases) {
+            if (testCases.hasOwnProperty(path)) {
                 try {
-                    let parsed = parser.parse(i);
-                    // TODO: expect(parsed.pathWithoutPredicates()).toEqual(testCases[i], "" + i + " generated correctly.");
-                    expect(parsed.toXPath()).toEqual(i, "" + i + " generated correctly.");
+                    let parsed = parser.parse(path) as XPathModels.XPathPathExpr;
+                    expect(parsed.pathWithoutPredicates()).toEqual(testCases[path], "" + path + " generated correctly.");
+                    expect(parsed.toXPath()).toEqual(path, "" + path + " generated correctly.");
                 } catch (err) {
-                    fail("" + err + " for input: " + i);
+                    fail("" + err + " for input: " + path);
                 }
             }
         }

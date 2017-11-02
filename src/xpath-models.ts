@@ -1,4 +1,5 @@
 // based on https://github.com/dimagi/js-xpath/blob/master/src/models.js
+import { BigNumber } from 'bignumber.js';
 export module XPathModels {
     export interface HashtagConfig {
         /** 
@@ -10,13 +11,13 @@ export module XPathModels {
          * @param hashtagExpr string representation of hashtag ex. #form/question
          * @return the XPath or falsy value if no corresponding XPath found
          */
-        hashtagToXPath: (hashtagExpr: string) => string | false,
+        hashtagToXPath: (hashtagExpr: string) => string | null,
         /**
          * @param xpath - XPath object (can be any of the objects defined in xpm
          * @returns text representation of XPath in hashtag format (default
-                    implementation is to just return the XPath)
+                    implementation is to just return the XPath) or null if no mapping exist
          */
-        toHashtag: (xpath: IXPathExpression) => string
+        toHashtag: (xpath: IXPathExpression) => string | null
     }
 
     export let DefaultHashtagConfig: HashtagConfig = {
@@ -55,8 +56,14 @@ export module XPathModels {
         }
     }
 
-    export function validateAxisName(name: string) {
-        return name in XPathAxisEnum;
+    export function testAxisName(name: string): string {
+        for (let key in XPathAxisEnum) {
+            if (name == XPathAxisEnum[key]) {
+                return name;
+            }
+        }
+
+        throw `${name} is not a valid axis name!`;
     }
 
     export class ParseError {
@@ -104,11 +111,12 @@ export module XPathModels {
     }
 
     export interface IXPathExpression {
+        toHashtag(): string;
         toXPath(): string;
     }
 
     export type XPathExpression = XPathBaseExpression | XPathOperation | XPathPathExpr | XPathFilterExpr | XPathHashtagExpression;
-    export type XPathBaseExpression = //{ parens: boolean, expr: XPathExpression } /* TODO: correct? */
+    export type XPathBaseExpression =
         | XPathFuncExpr
         | XPathVariableReference
         | XPathLiteral;
@@ -118,9 +126,17 @@ export module XPathModels {
         constructor(public value: string) {
         }
 
+        public toString() {
+            return "{var:" + String(this.value) + "}";
+        }
+
+        public toHashtag() {
+            return this.toXPath();
+        }
+
         public toXPath() {
-            return `${this.value}`;
-        };
+            return `$${this.value}`;
+        }
     }
 
     export type XPathOperation = XPathBoolExpr | XPathEqExpr | XPathCmpExpr | XPathArithExpr | XPathUnionExpr | XPathNumNegExpr;
@@ -129,6 +145,9 @@ export module XPathModels {
         operationType: T;
 
         abstract getChildren(): XPathExpression[];
+        toHashtag(): string {
+            return CurrentHashtagConfig.toHashtag(this);
+        }
         abstract toXPath(): string;
     }
 
@@ -140,16 +159,28 @@ export module XPathModels {
             this.operationType = properties.type;
         }
 
-        getChildren() {
-            return [this.properties.left, this.properties.right];
-        }
-
-        toXPath() {
-            var ret: string = this.properties.left.toXPath() + " " + this.expressionTypeEnumToXPathLiteral(this.operationType) + " " + this.properties.right.toXPath();
+        private print(formatter: (expr: XPathExpression) => string) {
+            var ret = `${formatter(this.properties.left)} ${this.expressionTypeEnumToXPathLiteral(this.operationType)} ${formatter(this.properties.right)}`;
             if (this.parens === true) {
                 return "(" + ret + ")";
             }
             return ret;
+        }
+
+        getChildren() {
+            return [this.properties.left, this.properties.right];
+        }
+
+        toHashtag(): string {
+            return this.print(expr => expr.toHashtag());
+        }
+
+        toString() {
+            return "{binop-expr:" + this.properties.type + "," + String(this.properties.left) + "," + String(this.properties.right) + "}";
+        }
+
+        toXPath(): string {
+            return this.print(expr => expr.toXPath());
         }
 
         abstract expressionTypeEnumToXPathLiteral(type: T): string;
@@ -205,8 +236,16 @@ export module XPathModels {
             return [this.properties.value];
         }
 
-        toXPath() {
-            return `-${this.properties.value}`;
+        toString() {
+            return "{unop-expr:" + this.properties.type + "," + String(this.properties.value) + "}";
+        }
+
+        toHashtag(): string {
+            return `-${this.properties.value.toHashtag()}`;
+        }
+
+        toXPath(): string {
+            return `-${this.properties.value.toXPath()}`;
         }
     }
 
@@ -220,12 +259,24 @@ export module XPathModels {
             this.args = properties.args || [];
         }
 
+        private combine(mapper: (part: XPathExpression) => string) {
+            return this.properties.id + "(" + this.args.map(mapper).join(", ") + ")";
+        }
+
         public getChildren() {
             return this.args;
         }
 
+        public toString() {
+            return `{func-expr:${this.properties.id},{${this.properties.args.join(',')}}}`;
+        }
+
+        public toHashtag(): string {
+            return CurrentHashtagConfig.toHashtag(this) || this.combine(part => part.toHashtag());
+        }
+
         public toXPath(): string {
-            return this.properties.id + "(" + this.args.map(arg => arg.toXPath()).join(", ") + ")";
+            return this.combine(part => part.toXPath());
         }
     }
 
@@ -240,12 +291,8 @@ export module XPathModels {
             this.steps = properties.steps || [];
         }
 
-        public getChildren() {
-            return this.steps;
-        }
-
-        public toXPath() {
-            var parts = this.steps.map(step => step.toXPath()),
+        private combine(partMap: (step: XPathStep) => string): string {
+            var parts = this.steps.map(partMap),
                 ret: string[] = [],
                 curPart: string,
                 prevPart: string = '',
@@ -272,6 +319,28 @@ export module XPathModels {
             }
             return ret.join("");
         }
+
+        public getChildren() {
+            return this.steps;
+        }
+
+        public toString() {
+            return `{path-expr:${this.properties.initialContext === XPathInitialContextEnum.EXPR
+                ? String(this.properties.filter)
+                : this.properties.initialContext},{${this.steps.join(',')}}}`;
+        }
+
+        public toHashtag(): string {
+            return CurrentHashtagConfig.toHashtag(this) || this.combine(part => part.toHashtag());
+        }
+
+        public toXPath(): string {
+            return this.combine(step => step.toXPath());
+        }
+
+        public pathWithoutPredicates(): string {
+            return this.combine(step => step.mainXPath());
+        }
     }
 
     export class XPathStep implements IXPathExpression {
@@ -286,11 +355,10 @@ export module XPathModels {
             predicates: XPathExpression[] | null,
             location: ParseLocation
         }) {
+            if (!properties.axis) {
+                throw 'No axis specified';
+            }
             this.predicates = properties.predicates || [];
-        }
-
-        public getChildren() {
-            return this.predicates;
         }
 
         private testString() {
@@ -304,9 +372,25 @@ export module XPathModels {
                 default:
                     return this.properties.test || null;
             }
-        };
+        }
 
-        private mainXPath() {
+        private predicateXPath(mapper: (part: XPathExpression) => string) {
+            if (this.predicates.length > 0) {
+                return "[" + this.predicates.map(mapper).join("][") + "]";
+            }
+
+            return "";
+        }
+
+        private combine(mapper: (part: XPathExpression) => string) {
+            return this.mainXPath() + this.predicateXPath(mapper);
+        }
+
+        public getChildren() {
+            return this.predicates;
+        }
+
+        public mainXPath() {
             var axisPrefix = this.properties.axis + "::"; // this is the default
             // Use the abbreviated syntax to shorten the axis
             // or in some cases the whole thing
@@ -336,18 +420,14 @@ export module XPathModels {
                     break;
             }
             return axisPrefix + this.testString();
-        };
+        }
 
-        private predicateXPath() {
-            if (this.predicates.length > 0) {
-                return "[" + this.predicates.map(p => p.toXPath()).join("][") + "]";
-            }
-
-            return "";
-        };
+        public toHashtag(): string {
+            return CurrentHashtagConfig.toHashtag(this) || this.combine(part => part.toHashtag());
+        }
 
         public toXPath() {
-            return this.mainXPath() + this.predicateXPath();
+            return this.combine(part => part.toXPath());
         }
 
         public toString() {
@@ -378,21 +458,32 @@ export module XPathModels {
             this.predicates = properties.predicates || [];
         }
 
-        public getChildren() {
-            return this.predicates;
-        }
-
-        public toXPath() {
+        private combine(mapper: (part: XPathExpression) => string): string {
             var predicates = "";
             if (this.predicates.length > 0) {
-                predicates = "[" + this.predicates.map(p => p.toXPath()).join("][") + "]";
+                predicates = "[" + this.predicates.map(mapper).join("][") + "]";
             }
             var expr = this.properties.expr.toXPath();
-            // TODO: should all non-function expressions be parenthesized?
             if (!(this.properties.expr instanceof XPathFuncExpr)) {
                 expr = "(" + expr + ")";
             }
             return expr + predicates;
+        }
+
+        public getChildren() {
+            return this.predicates;
+        }
+
+        public toString() {
+            return `{filt-expr:${this.properties.expr.toString()},{${this.predicates.join(',')}}}`;
+        }
+
+        public toHashtag(): string {
+            return CurrentHashtagConfig.toHashtag(this) || this.combine(part => part.toHashtag());
+        }
+
+        public toXPath(): string {
+            return this.combine(part => part.toXPath());
         }
     }
 
@@ -406,9 +497,16 @@ export module XPathModels {
             namespace: string,
             steps: XPathStep[] | null
         }) {
+            if (!CurrentHashtagConfig.isValidNamespace(definition.namespace)) {
+                throw new Error(definition.namespace + " is not a valid # expression");
+            }
             this.initialContext = definition.initialContext;
             this.namespace = definition.namespace;
             this.steps = definition.steps || [];
+        }
+
+        public toString() {
+            return `{hashtag-expr:${this.namespace},{${this.steps.join(",")}}}`;
         }
 
         public toXPath() {
@@ -441,26 +539,62 @@ export module XPathModels {
             this.value = value.substr(1, value.length - 2);
         }
 
-        public toXPath() {
+        private get valueDisplay() {
             return `${this.stringDelimiter}${this.value}${this.stringDelimiter}`;
+        }
+
+        public toString() {
+            return "{str:" + this.valueDisplay + "}";
+        }
+
+        public toHashtag() {
+            return this.valueDisplay;
+        }
+
+        public toXPath() {
+            return this.valueDisplay;
         }
     }
 
     export class XPathNumericLiteral implements IXPathExpression {
         type: 'numeric' = 'numeric';
-        constructor(public value: number, public location: ParseLocation) {
+        value: BigNumber;
+        /**
+         * @param value the string representation of the number as found in the XPATH
+         */
+        constructor(value: string, public location: ParseLocation) {
+            this.value = new BigNumber(value);
+        }
+
+        public toString() {
+            return "{num:" + this.value.toString() + "}";
+        }
+
+        public toHashtag() {
+            return this.toXPath();
         }
 
         public toXPath() {
-            // TODO: this will not convert properly in all cases
-            return `${this.value}`;
+            return this.value.toFixed();
         }
     }
 
     export class ParseLocation {
+        /**
+         * One-based character offset
+         */
         public firstColumn: number;
+        /**
+         * One-based line number
+         */
         public firstLine: number;
+        /**
+         * One-based last column, inclusive.
+         */
         public lastColumn: number;
+        /**
+         * One-based last line number, inclusive.
+         */
         public lastLine: number;
 
         constructor(properties: {

@@ -29,12 +29,15 @@ describe('XPath Parser', () => {
     function runFailures(testCases: { [input: string]: new (...args: any[]) => Error }) {
         for (let i in testCases) {
             if (testCases.hasOwnProperty(i)) {
-                expect(() => { parser.parse(i); }).toThrowError(testCases[i], "" + i + " correctly failed to parse.");
+                expect(() => {
+                    parser.parse(i);
+                    console.error(`No error parsing ${i}.`);
+                }).toThrow();
             }
         }
     };
 
-    xit("parses null expressions", function () {
+    it("parses null expressions", function () {
         runFailures({
             "": null,
             "     ": null,
@@ -42,25 +45,25 @@ describe('XPath Parser', () => {
         });
     });
 
-    xit("parses numbers", function () {
+    it("parses numbers", function () {
         runCommon({
             "10": "{num:10}",
-            "123.": "{num:123.}",
+            "123.": "{num:123}",
             "734.04": "{num:734.04}",
             "0.12345": "{num:0.12345}",
             ".666": "{num:0.666}",
             "00000333.3330000": "{num:333.333}",
-            "1230000000000000000000": "{num:1230000000000000000000}",
+            "1230000000000000000000": "{num:1.23e+21}",
             "1230000000000000000000.0": "{num:1.23e+21}",
             "0.00000000000000000123": "{num:1.23e-18}",
             "0": "{num:0}",
-            "0.": "{num:0.}",
-            ".0": "{num:0.}",
-            "0.0": "{num:0.}"
+            "0.": "{num:0}",
+            ".0": "{num:0}",
+            "0.0": "{num:0}"
         });
     });
 
-    xit("parses strings", function () {
+    it("parses strings", function () {
         runCommon({
             "\"\"": "{str:\"\"}",
             "\"   \"": "{str:\"   \"}",
@@ -75,7 +78,7 @@ describe('XPath Parser', () => {
     });
 
 
-    xit("parses variables", function () {
+    it("parses variables", function () {
         runCommon({
             "$var": "{var:var}",
             "$qualified:name": "{var:qualified:name}"
@@ -87,7 +90,7 @@ describe('XPath Parser', () => {
         });
     });
 
-    xit("parses parens nesting", function () {
+    it("parses parens nesting", function () {
         runCommon({
             "(5)": "{num:5}",
             "(( (( (5 )) )))  ": "{num:5}",
@@ -100,7 +103,7 @@ describe('XPath Parser', () => {
         });
     });
 
-    xit("parses operators", function () {
+    it("parses operators", function () {
         runCommon({
             "5 + 5": "{binop-expr:+,{num:5},{num:5}}",
             "-5": "{unop-expr:num-neg,{num:5}}",
@@ -136,7 +139,7 @@ describe('XPath Parser', () => {
         });
     });
 
-    xit("parses operators using associativity", function () {
+    it("parses operators using associativity", function () {
         runCommon({
             "1 or 2 or 3": "{binop-expr:or,{num:1},{binop-expr:or,{num:2},{num:3}}}",
             "1 and 2 and 3": "{binop-expr:and,{num:1},{binop-expr:and,{num:2},{num:3}}}",
@@ -144,13 +147,12 @@ describe('XPath Parser', () => {
             "1 < 2 >= 3 <= 4 > 5": "{binop-expr:>,{binop-expr:<=,{binop-expr:>=,{binop-expr:<,{num:1},{num:2}},{num:3}},{num:4}},{num:5}}",
             "1 + 2 - 3 - 4 + 5": "{binop-expr:+,{binop-expr:-,{binop-expr:-,{binop-expr:+,{num:1},{num:2}},{num:3}},{num:4}},{num:5}}",
             "1 mod 2 div 3 div 4 * 5": "{binop-expr:*,{binop-expr:/,{binop-expr:/,{binop-expr:%,{num:1},{num:2}},{num:3}},{num:4}},{num:5}}",
-            "1|2|3": "{binop-expr:union,{binop-expr:union,{num:1},{num:2}},{num:3}}",
-
+            "1|2|3": "{binop-expr:union,{binop-expr:union,{num:1},{num:2}},{num:3}}"
         });
 
     });
 
-    xit("parses operator using precedence", function () {
+    it("parses operator using precedence", function () {
         runCommon({
             "1 < 2 = 3 > 4 and 5 <= 6 != 7 >= 8 or 9 and 10":
             "{binop-expr:or,{binop-expr:and,{binop-expr:==,{binop-expr:<,{num:1},{num:2}},{binop-expr:>,{num:3},{num:4}}},{binop-expr:!=,{binop-expr:<=,{num:5},{num:6}},{binop-expr:>=,{num:7},{num:8}}}},{binop-expr:and,{num:9},{num:10}}}",
@@ -165,7 +167,7 @@ describe('XPath Parser', () => {
         });
     });
 
-    xit("parses function calls", function () {
+    it("parses function calls", function () {
         runCommon({
             "function()": "{func-expr:function,{}}",
             "func:tion()": "{func-expr:func:tion,{}}",
@@ -180,7 +182,7 @@ describe('XPath Parser', () => {
     });
 
 
-    xit("parses function calls that are actually node tests", function () {
+    it("parses function calls that are actually node tests", function () {
         runCommon({
             "node()": "{path-expr:rel,{{step:child,node()}}}",
             "text()": "{path-expr:rel,{{step:child,text()}}}",
@@ -198,7 +200,7 @@ describe('XPath Parser', () => {
         });
     });
 
-    xit("parses filter expressions", function () {
+    it("parses filter expressions", function () {
         runCommon({
             "bunch-o-nodes()[3]": "{filt-expr:{func-expr:bunch-o-nodes,{}},{{num:3}}}",
             "bunch-o-nodes()[3]['predicates'!='galore']": "{filt-expr:{func-expr:bunch-o-nodes,{}},{{num:3},{binop-expr:!=,{str:'predicates'},{str:'galore'}}}}",
@@ -208,7 +210,7 @@ describe('XPath Parser', () => {
         runFailures({});
     });
 
-    xit("parses path steps", function () {
+    it("parses path steps", function () {
         runCommon({
             ".": "{path-expr:rel,{{step:self,node()}}}",
             "..": "{path-expr:rel,{{step:parent,node()}}}",
@@ -219,7 +221,7 @@ describe('XPath Parser', () => {
         });
     });
 
-    xit("parses name tests", function () {
+    it("parses name tests", function () {
         runCommon({
             "name": "{path-expr:rel,{{step:child,name}}}",
             "qual:name": "{path-expr:rel,{{step:child,qual:name}}}",
@@ -236,7 +238,7 @@ describe('XPath Parser', () => {
         });
     });
 
-    xit("parses axes", function () {
+    it("parses axes", function () {
         runCommon({
             "child::*": "{path-expr:rel,{{step:child,*}}}",
             "parent::*": "{path-expr:rel,{{step:parent,*}}}",
@@ -263,7 +265,7 @@ describe('XPath Parser', () => {
         });
     });
 
-    xit("parses predicates", function () {
+    it("parses predicates", function () {
         runCommon({
             "descendant::node()[@attr='blah'][4]": "{path-expr:rel,{{step:descendant,node(),{{binop-expr:==,{path-expr:rel,{{step:attribute,attr}}},{str:'blah'}},{num:4}}}}}",
         });
@@ -272,7 +274,7 @@ describe('XPath Parser', () => {
         });
     });
 
-    xit("parses paths", function () {
+    it("parses paths", function () {
         runCommon({
             "rel/ative/path": "{path-expr:rel,{{step:child,rel},{step:child,ative},{step:child,path}}}",
             "/abs/olute/path['etc']": "{path-expr:abs,{{step:child,abs},{step:child,olute},{step:child,path,{{str:'etc'}}}}}",
@@ -292,9 +294,9 @@ describe('XPath Parser', () => {
         });
     });
 
-    xit("parses real world examples", function () {
+    it("parses real world examples", function () {
         runCommon({
-            "/foo/bar = 2.0": "{binop-expr:==,{path-expr:abs,{{step:child,foo},{step:child,bar}}},{num:2.}}",
+            "/foo/bar = 2.0": "{binop-expr:==,{path-expr:abs,{{step:child,foo},{step:child,bar}}},{num:2}}",
             "/patient/sex = 'male' and /patient/age > 15": "{binop-expr:and,{binop-expr:==,{path-expr:abs,{{step:child,patient},{step:child,sex}}},{str:'male'}},{binop-expr:>,{path-expr:abs,{{step:child,patient},{step:child,age}}},{num:15}}}",
             "../jr:hist-data/labs[@type=\"cd4\"]": "{path-expr:rel,{{step:parent,node()},{step:child,jr:hist-data},{step:child,labs,{{binop-expr:==,{path-expr:rel,{{step:attribute,type}}},{str:\"cd4\"}}}}}}",
             "function_call(26*(7+3), //*, /im/child::an/ancestor::x[3][true()]/path)": "{func-expr:function_call,{{binop-expr:*,{num:26},{binop-expr:+,{num:7},{num:3}}},{path-expr:abs,{{step:descendant-or-self,node()},{step:child,*}}},{path-expr:abs,{{step:child,im},{step:child,an},{step:ancestor,x,{{num:3},{func-expr:true,{}}}},{step:child,path}}}}}"

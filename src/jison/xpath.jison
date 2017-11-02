@@ -36,12 +36,6 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  * See README.md for more information
  */
 
-
-
-/* 
- *  TODO Code?
- */
-
 %right OR
 %right AND
 %left EQ NEQ
@@ -201,7 +195,7 @@ step_body: node_test                    { var nodeTest = $1; // temporary dict w
                                           $$ = new yy.xpathModels.XPathStep(nodeTest); }
         ;
 
-axis_specifier:  QNAME DBL_COLON           { $$ = yy.xpathModels.validateAxisName($1); }
+axis_specifier:  QNAME DBL_COLON           { $$ = yy.xpathModels.testAxisName($1); }
         |   AT                  { $$ = yy.xpathModels.XPathAxisEnum.ATTRIBUTE; }
         ;
 

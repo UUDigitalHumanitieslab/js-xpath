@@ -1,3 +1,4 @@
+import { BigNumber } from 'bignumber.js';
 export declare module XPathModels {
     interface HashtagConfig {
         /**
@@ -9,13 +10,13 @@ export declare module XPathModels {
          * @param hashtagExpr string representation of hashtag ex. #form/question
          * @return the XPath or falsy value if no corresponding XPath found
          */
-        hashtagToXPath: (hashtagExpr: string) => string | false;
+        hashtagToXPath: (hashtagExpr: string) => string | null;
         /**
          * @param xpath - XPath object (can be any of the objects defined in xpm
          * @returns text representation of XPath in hashtag format (default
-                    implementation is to just return the XPath)
+                    implementation is to just return the XPath) or null if no mapping exist
          */
-        toHashtag: (xpath: IXPathExpression) => string;
+        toHashtag: (xpath: IXPathExpression) => string | null;
     }
     let DefaultHashtagConfig: HashtagConfig;
     let CurrentHashtagConfig: HashtagConfig;
@@ -34,7 +35,7 @@ export declare module XPathModels {
         expected: string | undefined;
     };
     function debugLog(...args: string[]): void;
-    function validateAxisName(name: string): boolean;
+    function testAxisName(name: string): string;
     class ParseError {
         message: string;
         hash: ErrorHash;
@@ -72,6 +73,7 @@ export declare module XPathModels {
         TYPE_PROCESSING_INSTRUCTION = "processing-instruction",
     }
     interface IXPathExpression {
+        toHashtag(): string;
         toXPath(): string;
     }
     type XPathExpression = XPathBaseExpression | XPathOperation | XPathPathExpr | XPathFilterExpr | XPathHashtagExpression;
@@ -80,6 +82,8 @@ export declare module XPathModels {
         value: string;
         type: 'variable';
         constructor(value: string);
+        toString(): string;
+        toHashtag(): string;
         toXPath(): string;
     }
     type XPathOperation = XPathBoolExpr | XPathEqExpr | XPathCmpExpr | XPathArithExpr | XPathUnionExpr | XPathNumNegExpr;
@@ -87,6 +91,7 @@ export declare module XPathModels {
         type: 'operation';
         operationType: T;
         abstract getChildren(): XPathExpression[];
+        toHashtag(): string;
         abstract toXPath(): string;
     }
     abstract class XPathOperator<T> extends XPathOperationBase<T> {
@@ -102,7 +107,10 @@ export declare module XPathModels {
             left: XPathExpression;
             right: XPathExpression;
         });
+        private print(formatter);
         getChildren(): XPathExpression[];
+        toHashtag(): string;
+        toString(): string;
         toXPath(): string;
         abstract expressionTypeEnumToXPathLiteral(type: T): string;
     }
@@ -136,6 +144,8 @@ export declare module XPathModels {
             value: XPathExpression;
         });
         getChildren(): XPathExpression[];
+        toString(): string;
+        toHashtag(): string;
         toXPath(): string;
     }
     /**
@@ -152,7 +162,10 @@ export declare module XPathModels {
             id: string;
             args: XPathExpression[] | null;
         });
+        private combine(mapper);
         getChildren(): XPathExpression[];
+        toString(): string;
+        toHashtag(): string;
         toXPath(): string;
     }
     class XPathPathExpr implements IXPathExpression {
@@ -165,7 +178,11 @@ export declare module XPathModels {
             steps: XPathStep[] | null;
         });
         getChildren(): XPathStep[];
+        private combine(partMap);
+        toString(): string;
+        toHashtag(): string;
         toXPath(): string;
+        pathWithoutPredicates(): string;
     }
     class XPathStep implements IXPathExpression {
         properties: {
@@ -190,8 +207,10 @@ export declare module XPathModels {
         });
         getChildren(): XPathExpression[];
         private testString();
-        private mainXPath();
-        private predicateXPath();
+        mainXPath(): string;
+        private predicateXPath(mapper);
+        private combine(mapper);
+        toHashtag(): string;
         toXPath(): string;
         toString(): string;
     }
@@ -203,7 +222,10 @@ export declare module XPathModels {
             expr: XPathBaseExpression;
             predicates: XPathExpression[] | null;
         });
+        private combine(mapper);
         getChildren(): XPathExpression[];
+        toString(): string;
+        toHashtag(): string;
         toXPath(): string;
     }
     class XPathHashtagExpression implements IXPathExpression {
@@ -215,6 +237,7 @@ export declare module XPathModels {
             namespace: string;
             steps: XPathStep[] | null;
         });
+        toString(): string;
         toXPath(): string;
         toHashtag(): string;
     }
@@ -225,13 +248,21 @@ export declare module XPathModels {
         value: string;
         private stringDelimiter;
         constructor(value: string, location: ParseLocation);
+        private readonly valueDisplay;
+        toString(): string;
+        toHashtag(): string;
         toXPath(): string;
     }
     class XPathNumericLiteral implements IXPathExpression {
-        value: number;
         location: ParseLocation;
         type: 'numeric';
-        constructor(value: number, location: ParseLocation);
+        value: BigNumber;
+        /**
+         * @param value the string representation of the number as found in the XPATH
+         */
+        constructor(value: string, location: ParseLocation);
+        toString(): string;
+        toHashtag(): string;
         toXPath(): string;
     }
     class ParseLocation {
