@@ -1,6 +1,6 @@
 {
   "name": "ts-xpath",
-  "version": "0.0.1",
+  "version": "0.1.0",
   "description": "XPath Parser for TypeScript",
   "main": "dist/xpath.js",
   "types": "dist/xpath.d.ts",
