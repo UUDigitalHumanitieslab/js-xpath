@@ -510,6 +510,7 @@ var XPathModels;
     XPathModels.XPathFilterExpr = XPathFilterExpr;
     var XPathHashtagExpression = /** @class */ (function () {
         function XPathHashtagExpression(definition) {
+            this.type = 'hashtag';
             if (!XPathModels.CurrentHashtagConfig.isValidNamespace(definition.namespace)) {
                 throw new Error(definition.namespace + " is not a valid # expression");
             }

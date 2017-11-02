@@ -232,6 +232,7 @@ export declare module XPathModels {
         initialContext: XPathInitialContextEnum;
         namespace: string;
         steps: XPathStep[];
+        type: 'hashtag';
         constructor(definition: {
             initialContext: XPathInitialContextEnum;
             namespace: string;

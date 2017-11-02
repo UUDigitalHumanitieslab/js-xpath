@@ -491,6 +491,7 @@ export module XPathModels {
         public initialContext: XPathInitialContextEnum;
         public namespace: string;
         public steps: XPathStep[];
+        public type: 'hashtag' = 'hashtag';
 
         constructor(definition: {
             initialContext: XPathInitialContextEnum,
