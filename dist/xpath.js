@@ -345,9 +345,6 @@ var XPathModels;
             this.type = 'path';
             this.steps = properties.steps || [];
         }
-        XPathPathExpr.prototype.getChildren = function () {
-            return this.steps;
-        };
         XPathPathExpr.prototype.combine = function (partMap) {
             var parts = this.steps.map(partMap), ret = [], curPart, prevPart = '', sep;
             var root = (this.properties.initialContext === XPathInitialContextEnum.ROOT) ? "/" : "";
@@ -370,6 +367,9 @@ var XPathModels;
                 prevPart = curPart;
             }
             return ret.join("");
+        };
+        XPathPathExpr.prototype.getChildren = function () {
+            return this.steps;
         };
         XPathPathExpr.prototype.toString = function () {
             return "{path-expr:" + (this.properties.initialContext === XPathInitialContextEnum.EXPR
@@ -397,9 +397,6 @@ var XPathModels;
             }
             this.predicates = properties.predicates || [];
         }
-        XPathStep.prototype.getChildren = function () {
-            return this.predicates;
-        };
         XPathStep.prototype.testString = function () {
             switch (this.properties.test) {
                 case XPathTestEnum.NAME:
@@ -412,7 +409,18 @@ var XPathModels;
                     return this.properties.test || null;
             }
         };
-        ;
+        XPathStep.prototype.predicateXPath = function (mapper) {
+            if (this.predicates.length > 0) {
+                return "[" + this.predicates.map(mapper).join("][") + "]";
+            }
+            return "";
+        };
+        XPathStep.prototype.combine = function (mapper) {
+            return this.mainXPath() + this.predicateXPath(mapper);
+        };
+        XPathStep.prototype.getChildren = function () {
+            return this.predicates;
+        };
         XPathStep.prototype.mainXPath = function () {
             var axisPrefix = this.properties.axis + "::"; // this is the default
             // Use the abbreviated syntax to shorten the axis
@@ -443,16 +451,6 @@ var XPathModels;
                     break;
             }
             return axisPrefix + this.testString();
-        };
-        ;
-        XPathStep.prototype.predicateXPath = function (mapper) {
-            if (this.predicates.length > 0) {
-                return "[" + this.predicates.map(mapper).join("][") + "]";
-            }
-            return "";
-        };
-        XPathStep.prototype.combine = function (mapper) {
-            return this.mainXPath() + this.predicateXPath(mapper);
         };
         XPathStep.prototype.toHashtag = function () {
             return XPathModels.CurrentHashtagConfig.toHashtag(this) || this.combine(function (part) { return part.toHashtag(); });

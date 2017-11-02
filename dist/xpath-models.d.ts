@@ -177,8 +177,8 @@ export declare module XPathModels {
             filter: XPathFilterExpr;
             steps: XPathStep[] | null;
         });
-        getChildren(): XPathStep[];
         private combine(partMap);
+        getChildren(): XPathStep[];
         toString(): string;
         toHashtag(): string;
         toXPath(): string;
@@ -205,11 +205,11 @@ export declare module XPathModels {
             predicates: XPathExpression[] | null;
             location: ParseLocation;
         });
-        getChildren(): XPathExpression[];
         private testString();
-        mainXPath(): string;
         private predicateXPath(mapper);
         private combine(mapper);
+        getChildren(): XPathExpression[];
+        mainXPath(): string;
         toHashtag(): string;
         toXPath(): string;
         toString(): string;
@@ -266,9 +266,21 @@ export declare module XPathModels {
         toXPath(): string;
     }
     class ParseLocation {
+        /**
+         * One-based character offset
+         */
         firstColumn: number;
+        /**
+         * One-based line number
+         */
         firstLine: number;
+        /**
+         * One-based last column, inclusive.
+         */
         lastColumn: number;
+        /**
+         * One-based last line number, inclusive.
+         */
         lastLine: number;
         constructor(properties: {
             first_column: number;
