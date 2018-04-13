@@ -2,7 +2,7 @@ var typescriptConfig = require('./tsconfig.json');
 typescriptConfig.compilerOptions.allowJs = true;
 typescriptConfig.compilerOptions.declaration = false;
 module.exports = function (config) {
-    config.set({
+    let configuration = {
         basePath: '',
         frameworks: ['jasmine', 'karma-typescript'],
         files: ['src/**/*.+(js|ts)'],
@@ -14,7 +14,10 @@ module.exports = function (config) {
         autoWatch: false,
         singleRun: true,
         plugins: [
-            'karma-jasmine',  'karma-phantomjs-launcher',  'karma-typescript'
+            'karma-chrome-launcher',
+            'karma-jasmine',
+            'karma-phantomjs-launcher',
+            'karma-typescript'
         ],
         karmaTypescriptConfig: {
             compilerOptions: typescriptConfig.compilerOptions,
@@ -22,5 +25,18 @@ module.exports = function (config) {
                 entrypoints: /\.spec\.ts$/
             }
         },
-    });
+        browsers: ['ChromeHeadless'],
+        customLaunchers: {
+            Chrome_travis_ci: {
+                base: 'ChromeHeadless',
+                flags: ['--no-sandbox', '--disable-gpu']
+            }
+        }
+    }
+
+    if (process.env.TRAVIS) {
+        configuration.browsers = ['Chrome_travis_ci'];
+    }
+
+    config.set(configuration);
 }

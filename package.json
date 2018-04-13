@@ -9,7 +9,7 @@
     "jison": "jison src/jison/xpath.jison src/jison/xpath.jisonlex -o src/jison/xpath.js -m commonjs",
     "tsc": "tsc",
     "build": "npm run jison && WEBPACK_ENV=build webpack && npm run test",
-    "test": "karma start",
+    "test": "karma start karma.conf.js --single-run",
     "dev": "WEBPACK_ENV=dev webpack --progress --colors --watch"
   },
   "repository": {
@@ -35,6 +35,7 @@
     "jasmine": "^2.8.0",
     "jison": "0.4.17",
     "karma": "^1.7.1",
+    "karma-chrome-launcher": "^2.2.0",
     "karma-jasmine": "^1.1.0",
     "karma-phantomjs-launcher": "^1.0.4",
     "karma-typescript": "^3.0.8",

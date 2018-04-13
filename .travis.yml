@@ -1,0 +1,17 @@
+sudo: required
+dist: trusty
+language: node_js
+addons:
+  chrome: stable
+before_install:  
+  - google-chrome-stable --headless --disable-gpu --remote-debugging-port=9222 http://localhost &
+node_js:
+  - "node"
+  - "8"
+  - "7"
+  - "lts/*"
+cache:
+  directories: node_modules
+before_script:
+  - "sudo chown root /opt/google/chrome/chrome-sandbox"
+  - "sudo chmod 4755 /opt/google/chrome/chrome-sandbox"
