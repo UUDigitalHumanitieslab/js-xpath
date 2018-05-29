@@ -1,240 +1,440 @@
+// based on https://github.com/dimagi/js-xpath/blob/master/src/models.js
+import { BigNumber } from 'bignumber.js';
+export module XPathModels {
+    export interface HashtagConfig {
+        /** 
+         * @param namespace - the namespace used in hashtag
+         * @return truthy value
+         */
+        isValidNamespace: (namespace: string) => boolean,
+        /**
+         * @param hashtagExpr string representation of hashtag ex. #form/question
+         * @return the XPath or falsy value if no corresponding XPath found
+         */
+        hashtagToXPath: (hashtagExpr: string) => string | null,
+        /**
+         * @param xpath - XPath object (can be any of the objects defined in xpm
+         * @returns text representation of XPath in hashtag format (default
+                    implementation is to just return the XPath) or null if no mapping exist
+         */
+        toHashtag: (xpath: IXPathExpression) => string | null
+    }
 
-/*
- * These models are very heavily based on their JavaRosa counterparts, which live at:
- * https://bitbucket.org/javarosa/javarosa/src/tip/core/src/org/javarosa/xpath/expr/
- *
- */
-
-var SchemeNumber = require('./lib/schemeNumber.js').SchemeNumber;
-
-if (!Function.prototype.bind) {
-    // PhantomJS doesn't support bind yet
-    Function.prototype.bind = function(oThis) {
-        if (typeof this !== 'function') {
-            // closest thing possible to the ECMAScript 5
-            // internal IsCallable function
-            throw new TypeError('Function.prototype.bind - what is trying to be bound is not callable');
-        }
-
-        var aArgs   = Array.prototype.slice.call(arguments, 1),
-            fToBind = this,
-            fNOP    = function() {},
-            fBound  = function() {
-                return fToBind.apply(this instanceof fNOP ? this : oThis,
-                                     aArgs.concat(Array.prototype.slice.call(arguments)));
-            };
-
-        fNOP.prototype = this.prototype;
-        fBound.prototype = new fNOP();
-
-        return fBound;
-    };
-}
-
-var defaultHashtagConfig = {
-    // @param namespace - the namespace used in hashtag
-    // @return - truthy value
-    isValidNamespace: function (namespace) {
-        return false;
-    },
-    // @param hashtagExpr - text of hashtag ex. #form/question
-    // @return - the XPath or falsy value if no corresponding XPath found
-    hashtagToXPath: function (hashtagExpr) {
-        throw new Error("This should be overridden");
-    },
-    // @param xpath_ - XPath object (can be any of the objects defined in xpm
-    // @returns - text representation of XPath in hashtag format (default
-    //            implementation is to just return the XPath)
-    toHashtag: function (xpath_) {
-        return xpath_.toXPath();
-    },
-};
-
-var makeXPathModels = function(hashtagConfig) {
-    var xpm = {};
-    xpm.DEBUG_MODE = false;
-    hashtagConfig = hashtagConfig || defaultHashtagConfig;
-
-    xpm.debuglog = function () {
-        if (xpm.DEBUG_MODE) {
-            var string = "";
-            Array.prototype.slice.call(arguments).forEach(function (value) {
-                string += value + ", ";
-            });
-            console.log(string);
+    export let DefaultHashtagConfig: HashtagConfig = {
+        isValidNamespace: function (namespace) {
+            return false;
+        },
+        hashtagToXPath: function (hashtagExpr) {
+            throw new Error("This should be overridden");
+        },
+        toHashtag: function (xpath) {
+            return xpath.toXPath();
         }
     };
 
-    xpm.validateAxisName = function(name) {
-        for (var i in xpm.XPathAxisEnum) {
-            if (xpm.XPathAxisEnum.hasOwnProperty(i) && xpm.XPathAxisEnum[i] === name) {
-                return xpm.XPathAxisEnum[i];
+    export let CurrentHashtagConfig: HashtagConfig;
+
+    export let isDebugging = false;
+
+    export type ErrorHash = {
+        text: string,
+        token: string,
+        line: number,
+        loc: {
+            first_line: number | undefined,
+            last_line: number | undefined,
+            first_column: number | undefined,
+            last_column: number | undefined,
+            range: [number, number] | undefined
+        } | undefined,
+        expected: string | undefined
+    }
+
+    export function debugLog(...args: string[]) {
+        if (isDebugging) {
+            console.debug(args.join(', '));
+        }
+    }
+
+    export function testAxisName(name: string): string {
+        for (let key in XPathAxisEnum) {
+            if (name == XPathAxisEnum[key]) {
+                return name;
             }
         }
-        throw name + " is not a valid axis name!";
-    };
 
-    // helper function
-    var objToXPath = function(something) {
-        return something.toXPath();
-    };
+        throw `${name} is not a valid axis name!`;
+    }
 
-    var objToHashtag = function (xpath_) {
-        if (xpath_ instanceof xpm.HashtagExpr) {
-            return xpath_.toHashtag();
+    export class ParseError {
+        constructor(public message: string, public hash: ErrorHash) {
         }
-        return hashtagConfig.toHashtag(xpath_) || xpath_.toHashtag();
+    }
+
+    export function parseError(
+        str: string,
+        hash: ErrorHash) {
+        throw new ParseError(str, hash);
+    }
+
+    export enum XPathInitialContextEnum {
+        HASHTAG = "hashtag",
+        ROOT = "abs",
+        RELATIVE = "rel",
+        EXPR = "expr"
     };
 
-    var objToHashtagWithCombine = function(self, combineFunc) {
-        return function () {
-            return hashtagConfig.toHashtag(self) || combineFunc(objToHashtag).bind(self)();
-        };
+    export enum XPathAxisEnum {
+        CHILD = "child",
+        DESCENDANT = "descendant",
+        PARENT = "parent",
+        ANCESTOR = "ancestor",
+        FOLLOWING_SIBLING = "following-sibling",
+        PRECEDING_SIBLING = "preceding-sibling",
+        FOLLOWING = "following",
+        PRECEDING = "preceding",
+        ATTRIBUTE = "attribute",
+        NAMESPACE = "namespace",
+        SELF = "self",
+        DESCENDANT_OR_SELF = "descendant-or-self",
+        ANCESTOR_OR_SELF = "ancestor-or-self"
     };
 
-    xpm.XPathNumericLiteral = function(value) {
-        /*
-         * This is shockingly complicated for what should be simple thanks to
-         * javascript number arithmetic.
-         *
-         * Use the big number library to hold the value, which will hold
-         * large integers properly. For everything else, do the best rounding
-         * we can when exporting, since xpath doesn't like scientific notation
-         *
-         */
-        this.value = SchemeNumber(value);
-        this.toString = function() {
-            return "{num:" + this.value.toString() + "}";
-        };
-        this.toXPath = function() {
-            // helper function
-            var toFixed = function (x) {
-              /*
-               * Convert scientific notation formatted numbers to their decimal
-               * counterparts
-               *
-               * HT: http://stackoverflow.com/questions/1685680/how-to-avoid-scientific-notation-for-large-numbers-in-javascript
-               */
-              var e;
-              if (x < 1.0) {
-                e = parseInt(x.toString().split('e-')[1]);
-                if (e) {
-                    x *= Math.pow(10,e-1);
-                    x = '0.' + (new Array(e)).join('0') + x.toString().substring(2);
-                }
-              } else {
-                e = parseInt(x.toString().split('+')[1]);
-                if (e > 20) {
-                    e -= 20;
-                    x /= Math.pow(10,e);
-                    x += (new Array(e+1)).join('0');
-                }
-              }
-              return x;
-            };
-            return toFixed(this.value.toString());
-        };
-        this.toHashtag = this.toXPath;
-        this.getChildren = function () {
-           return [];
-        };
-        return this;
-    };
+    export enum XPathTestEnum {
+        NAME = "name",
+        NAME_WILDCARD = "*",
+        NAMESPACE_WILDCARD = ":*",
+        TYPE_NODE = "node()",
+        TYPE_TEXT = "text()",
+        TYPE_COMMENT = "comment()",
+        TYPE_PROCESSING_INSTRUCTION = "processing-instruction"
+    }
 
-    xpm.XPathStringLiteral = function(value) {
-        var stringDelim = value[0];
-        this.value = value = value.substr(1, value.length-2);
-        this.stringDelim = stringDelim;
+    export interface IXPathExpression {
+        toHashtag(): string;
+        toXPath(): string;
+    }
 
-        var toXPathString = function(value) {
-            return stringDelim + value + stringDelim;
-        };
+    export type XPathExpression = XPathBaseExpression | XPathOperation | XPathPathExpr | XPathFilterExpr | XPathHashtagExpression;
+    export type XPathBaseExpression =
+        | XPathFuncExpr
+        | XPathVariableReference
+        | XPathLiteral;
 
-        this.valueDisplay = toXPathString(value);
-        this.toString = function() {
-            return "{str:" + this.valueDisplay + "}";
-        };
-        this.toXPath = function() {
-            return this.valueDisplay;
-        };
-        this.toHashtag = this.toXPath;
-        this.getChildren = function () {
-           return [];
-        };
-        return this;
-    };
+    export class XPathVariableReference implements IXPathExpression {
+        type: 'variable';
+        constructor(public value: string) {
+        }
 
-    xpm.XPathVariableReference = function(value) {
-        this.value = value;
-        this.toString = function() {
+        public toString() {
             return "{var:" + String(this.value) + "}";
-        };
-        this.toXPath = function() {
-            return "$" + String(this.value);
-        };
-        this.toHashtag = this.toXPath;
-        this.getChildren = function () {
-           return [];
-        };
-    };
+        }
 
-    xpm.XPathAxisEnum = {
-        CHILD: "child",
-        DESCENDANT: "descendant",
-        PARENT: "parent",
-        ANCESTOR: "ancestor",
-        FOLLOWING_SIBLING: "following-sibling",
-        PRECEDING_SIBLING: "preceding-sibling",
-        FOLLOWING: "following",
-        PRECEDING: "preceding",
-        ATTRIBUTE: "attribute",
-        NAMESPACE: "namespace",
-        SELF: "self",
-        DESCENDANT_OR_SELF: "descendant-or-self",
-        ANCESTOR_OR_SELF: "ancestor-or-self"
-    };
+        public toHashtag() {
+            return this.toXPath();
+        }
 
-    xpm.XPathTestEnum = {
-        NAME: "name",
-        NAME_WILDCARD: "*",
-        NAMESPACE_WILDCARD: ":*",
-        TYPE_NODE: "node()",
-        TYPE_TEXT: "text()",
-        TYPE_COMMENT: "comment()",
-        TYPE_PROCESSING_INSTRUCTION: "processing-instruction"
+        public toXPath() {
+            return `$${this.value}`;
+        }
+    }
 
-    };
+    export type XPathOperation = XPathBoolExpr | XPathEqExpr | XPathCmpExpr | XPathArithExpr | XPathUnionExpr | XPathNumNegExpr;
+    export abstract class XPathOperationBase<T> implements IXPathExpression {
+        type: 'operation' = 'operation';
+        operationType: T;
 
-    xpm.XPathStep = function(definition) {
-        /*
-         * A step (part of a path)
-         *
-         */
-        this.axis = definition.axis;
-        this.test = definition.test;
-        this.predicates = definition.predicates || [];
-        this.name = definition.name;
-        this.namespace = definition.namespace;
-        this.literal = definition.literal;
+        abstract getChildren(): XPathExpression[];
+        toHashtag(): string {
+            return CurrentHashtagConfig.toHashtag(this);
+        }
+        abstract toXPath(): string;
+    }
 
-        this.testString = function () {
-             switch(this.test) {
-                case xpm.XPathTestEnum.NAME:
-                    return String(this.name);
-                case xpm.XPathTestEnum.TYPE_PROCESSING_INSTRUCTION:
-                    return "processing-instruction(" + (this.literal || "") + ")";
-                case xpm.XPathTestEnum.NAMESPACE_WILDCARD:
-                    return this.namespace + ":*";
+    export abstract class XPathOperator<T> extends XPathOperationBase<T>  {
+        operationType: T;
+        public parens: boolean = false;
+        constructor(public properties: { type: T, left: XPathExpression, right: XPathExpression }) {
+            super();
+            this.operationType = properties.type;
+        }
+
+        private print(formatter: (expr: XPathExpression) => string) {
+            var ret = `${formatter(this.properties.left)} ${this.expressionTypeEnumToXPathLiteral(this.operationType)} ${formatter(this.properties.right)}`;
+            if (this.parens === true) {
+                return "(" + ret + ")";
+            }
+            return ret;
+        }
+
+        getChildren() {
+            return [this.properties.left, this.properties.right];
+        }
+
+        toHashtag(): string {
+            return this.print(expr => expr.toHashtag());
+        }
+
+        toString() {
+            return "{binop-expr:" + this.properties.type + "," + String(this.properties.left) + "," + String(this.properties.right) + "}";
+        }
+
+        toXPath(): string {
+            return this.print(expr => expr.toXPath());
+        }
+
+        abstract expressionTypeEnumToXPathLiteral(type: T): string;
+    }
+
+    // TODO: is this mapping really needed? Why not always use the same?
+    export type XPathBoolOperator = 'or' | 'and';
+    export type XPathEqOperator = '==' | '!=';
+    export type XPathCmpOperator = '<' | '<=' | '>' | '>=';
+    export type XPathArithOperator = '+' | '-' | '*' | '/' | '%';
+
+    export class XPathBoolExpr extends XPathOperator<XPathBoolOperator> {
+        expressionTypeEnumToXPathLiteral(type: XPathBoolOperator) {
+            return type;
+        }
+    }
+    export class XPathEqExpr extends XPathOperator<XPathEqOperator> {
+        expressionTypeEnumToXPathLiteral(type: XPathEqOperator) {
+            return type == '==' ? '=' : '!=';
+        }
+    }
+    export class XPathCmpExpr extends XPathOperator<XPathCmpOperator> {
+        expressionTypeEnumToXPathLiteral(type: XPathCmpOperator) {
+            return type;
+        }
+    }
+    export class XPathArithExpr extends XPathOperator<XPathArithOperator> {
+        expressionTypeEnumToXPathLiteral(type: XPathArithOperator) {
+            switch (type) {
+                case '%':
+                    return 'mod';
+                case '/':
+                    return 'div';
                 default:
-                    return this.test || null;
-             }
-        };
+                    return type;
+            }
+        }
+    }
+    export class XPathUnionExpr extends XPathOperator<'union'> {
+        expressionTypeEnumToXPathLiteral(type: 'union') {
+            return '|';
+        }
+    }
 
-        this.toString = function() {
+    export class XPathNumNegExpr extends XPathOperationBase<'num-neg'> {
+        operationType: 'num-neg';
+        constructor(public properties: { type: 'num-neg', value: XPathExpression }) {
+            super();
+            this.operationType = properties.type;
+        }
+
+        getChildren() {
+            return [this.properties.value];
+        }
+
+        toString() {
+            return "{unop-expr:" + this.properties.type + "," + String(this.properties.value) + "}";
+        }
+
+        toHashtag(): string {
+            return `-${this.properties.value.toHashtag()}`;
+        }
+
+        toXPath(): string {
+            return `-${this.properties.value.toXPath()}`;
+        }
+    }
+
+    /**
+     * Functional call expression.
+     */
+    export class XPathFuncExpr implements IXPathExpression {
+        type: 'function' = 'function';
+        args: XPathExpression[];
+        constructor(public properties: { id: string, args: XPathExpression[] | null }) {
+            this.args = properties.args || [];
+        }
+
+        private combine(mapper: (part: XPathExpression) => string) {
+            return this.properties.id + "(" + this.args.map(mapper).join(", ") + ")";
+        }
+
+        public getChildren() {
+            return this.args;
+        }
+
+        public toString() {
+            return `{func-expr:${this.properties.id},{${this.properties.args.join(',')}}}`;
+        }
+
+        public toHashtag(): string {
+            return CurrentHashtagConfig.toHashtag(this) || this.combine(part => part.toHashtag());
+        }
+
+        public toXPath(): string {
+            return this.combine(part => part.toXPath());
+        }
+    }
+
+    export class XPathPathExpr implements IXPathExpression {
+        type: 'path' = 'path';
+        steps: XPathStep[];
+        constructor(private properties: {
+            initialContext: XPathInitialContextEnum,
+            filter: XPathFilterExpr,
+            steps: XPathStep[] | null
+        }) {
+            this.steps = properties.steps || [];
+        }
+
+        private combine(partMap: (step: XPathStep) => string): string {
+            var parts = this.steps.map(partMap),
+                ret: string[] = [],
+                curPart: string,
+                prevPart: string = '',
+                sep: string;
+
+            var root = (this.properties.initialContext === XPathInitialContextEnum.ROOT) ? "/" : "";
+            if (this.properties.filter) {
+                parts.splice(0, 0, this.properties.filter.toXPath());
+            }
+            if (parts.length === 0) {
+                return root;
+            }
+            for (var i = 0; i < parts.length; i++) {
+                curPart = parts[i];
+                if (curPart !== "//" && prevPart !== "//") {
+                    // unless the current part starts with a slash, put slashes between
+                    // parts. the only exception to this rule is at the beginning,
+                    // when we only use a slash if it's an absolute path
+                    sep = (i === 0) ? root : "/";
+                    ret.push(sep);
+                }
+                ret.push(curPart);
+                prevPart = curPart;
+            }
+            return ret.join("");
+        }
+
+        public getChildren() {
+            return this.steps;
+        }
+
+        public toString() {
+            return `{path-expr:${this.properties.initialContext === XPathInitialContextEnum.EXPR
+                ? String(this.properties.filter)
+                : this.properties.initialContext},{${this.steps.join(',')}}}`;
+        }
+
+        public toHashtag(): string {
+            return CurrentHashtagConfig.toHashtag(this) || this.combine(part => part.toHashtag());
+        }
+
+        public toXPath(): string {
+            return this.combine(step => step.toXPath());
+        }
+
+        public pathWithoutPredicates(): string {
+            return this.combine(step => step.mainXPath());
+        }
+    }
+
+    export class XPathStep implements IXPathExpression {
+        type: 'path-step' = 'path-step';
+        public predicates: XPathExpression[];
+        constructor(public properties: {
+            axis: XPathAxisEnum,
+            test: XPathTestEnum,
+            name: string,
+            namespace: string,
+            literal: string | null,
+            predicates: XPathExpression[] | null,
+            location: ParseLocation
+        }) {
+            if (!properties.axis) {
+                throw 'No axis specified';
+            }
+            this.predicates = properties.predicates || [];
+        }
+
+        private testString() {
+            switch (this.properties.test) {
+                case XPathTestEnum.NAME:
+                    return String(this.properties.name);
+                case XPathTestEnum.TYPE_PROCESSING_INSTRUCTION:
+                    return "processing-instruction(" + (this.properties.literal || "") + ")";
+                case XPathTestEnum.NAMESPACE_WILDCARD:
+                    return this.properties.namespace + ":*";
+                default:
+                    return this.properties.test || null;
+            }
+        }
+
+        private predicateXPath(mapper: (part: XPathExpression) => string) {
+            if (this.predicates.length > 0) {
+                return "[" + this.predicates.map(mapper).join("][") + "]";
+            }
+
+            return "";
+        }
+
+        private combine(mapper: (part: XPathExpression) => string) {
+            return this.mainXPath() + this.predicateXPath(mapper);
+        }
+
+        public getChildren() {
+            return this.predicates;
+        }
+
+        public mainXPath() {
+            var axisPrefix = this.properties.axis + "::"; // this is the default
+            // Use the abbreviated syntax to shorten the axis
+            // or in some cases the whole thing
+            switch (this.properties.axis) {
+                case XPathAxisEnum.DESCENDANT_OR_SELF:
+                    if (this.properties.test === XPathTestEnum.TYPE_NODE) {
+                        return "//";
+                    }
+                    break;
+                case XPathAxisEnum.CHILD:
+                    axisPrefix = ""; // this is the default
+                    break;
+                case XPathAxisEnum.ATTRIBUTE:
+                    axisPrefix = "@";
+                    break;
+                case XPathAxisEnum.SELF:
+                    if (this.properties.test === XPathTestEnum.TYPE_NODE) {
+                        return ".";
+                    }
+                    break;
+                case XPathAxisEnum.PARENT:
+                    if (this.properties.test === XPathTestEnum.TYPE_NODE) {
+                        return "..";
+                    }
+                    break;
+                default:
+                    break;
+            }
+            return axisPrefix + this.testString();
+        }
+
+        public toHashtag(): string {
+            return CurrentHashtagConfig.toHashtag(this) || this.combine(part => part.toHashtag());
+        }
+
+        public toXPath() {
+            return this.combine(part => part.toXPath());
+        }
+
+        public toString() {
             var stringArray = [];
 
             stringArray.push("{step:");
-            stringArray.push(String(this.axis));
+            stringArray.push(String(this.properties.axis));
             stringArray.push(",");
             stringArray.push(this.testString());
             if (this.predicates.length > 0) {
@@ -246,382 +446,169 @@ var makeXPathModels = function(hashtagConfig) {
             stringArray.push("}");
             return stringArray.join("");
         };
+    }
 
-        this.mainXPath = function () {
-            var axisPrefix = this.axis + "::"; // this is the default
-            // Use the abbreviated syntax to shorten the axis
-            // or in some cases the whole thing
-            switch (this.axis) {
-                case xpm.XPathAxisEnum.DESCENDANT_OR_SELF:
-                    if (this.test === xpm.XPathTestEnum.TYPE_NODE) {
-                        return "//";
-                    }
-                    break;
-                case xpm.XPathAxisEnum.CHILD:
-                    axisPrefix = ""; // this is the default
-                    break;
-                case xpm.XPathAxisEnum.ATTRIBUTE:
-                    axisPrefix = "@";
-                    break;
-                case xpm.XPathAxisEnum.SELF:
-                    if (this.test === xpm.XPathTestEnum.TYPE_NODE) {
-                        return ".";
-                    }
-                    break;
-                case xpm.XPathAxisEnum.PARENT:
-                    if (this.test === xpm.XPathTestEnum.TYPE_NODE) {
-                        return "..";
-                    }
-                    break;
-                default:
-                   break;
-            }
-            return axisPrefix + this.testString();
-        };
-        this.predicateXPath = function (func) {
+    export class XPathFilterExpr implements IXPathExpression {
+        type: 'filter' = 'filter';
+        public predicates: XPathExpression[];
+        constructor(private properties: {
+            expr: XPathBaseExpression,
+            predicates: XPathExpression[] | null
+        }) {
+            this.predicates = properties.predicates || [];
+        }
+
+        private combine(mapper: (part: XPathExpression) => string): string {
+            var predicates = "";
             if (this.predicates.length > 0) {
-                return "[" + this.predicates.map(func).join("][") + "]";
+                predicates = "[" + this.predicates.map(mapper).join("][") + "]";
             }
-            return "";
-        };
-        function _combine (transFunc) {
-            return function() {
-                return this.mainXPath() + this.predicateXPath(transFunc);
-            };
+            var expr = this.properties.expr.toXPath();
+            if (!(this.properties.expr instanceof XPathFuncExpr)) {
+                expr = "(" + expr + ")";
+            }
+            return expr + predicates;
         }
-        this.toXPath = _combine(objToXPath);
-        this.toHashtag = objToHashtagWithCombine(this, _combine);
-        this.getChildren = function () {
-           return [];
-        };
 
-        return this;
-    };
-
-    xpm.XPathInitialContextEnum = {
-        HASHTAG: "hashtag",
-        ROOT: "abs",
-        RELATIVE: "rel",
-        EXPR: "expr"
-    };
-
-    xpm.XPathPathExpr = function(definition) {
-        /**
-         * an XPath path, which consists mainly of steps
-         */
-        var self = this;
-        this.initial_context = definition.initial_context;
-        this.steps = definition.steps || [];
-        this.filter = definition.filter;
-        this.toString = function() {
-            var stringArray = [];
-            stringArray.push("{path-expr:");
-            stringArray.push(this.initial_context === xpm.XPathInitialContextEnum.EXPR ?
-                             String(this.filter) : this.initial_context);
-            stringArray.push(",{");
-            stringArray.push(this.steps.join(","));
-            stringArray.push("}}");
-            return stringArray.join("");
-        };
-        var _combine = function (func) {
-            return function () {
-                // this helper function only exists so that
-                // the two methods below it can call itx
-                var parts = self.steps.map(func), ret = [], curPart, prevPart, sep;
-                var root = (self.initial_context === xpm.XPathInitialContextEnum.ROOT) ? "/" : "";
-                if (self.filter) {
-                    parts.splice(0, 0, func(self.filter));
-                }
-                if (parts.length === 0) {
-                    return root;
-                }
-                for (var i = 0; i < parts.length; i ++) {
-                    curPart = parts[i];
-                    if (curPart !== "//" && prevPart !== "//") {
-                        // unless the current part starts with a slash, put slashes between
-                        // parts. the only exception to this rule is at the beginning,
-                        // when we only use a slash if it's an absolute path
-                        sep = (i === 0) ? root : "/";
-                        ret.push(sep);
-                    }
-                    ret.push(curPart);
-                    prevPart = curPart;
-                }
-                return ret.join("");
-            };
-        };
-        this.toXPath = _combine(objToXPath);
-        this.toHashtag = objToHashtagWithCombine(this, _combine);
-        // custom function to pull out any filters and just return the root path
-        this.pathWithoutPredicates = _combine(function (step) { return step.mainXPath(); });
-
-        this.getChildren = function () {
-           return this.steps;
-        };
-
-        return this;
-    };
-
-    xpm.XPathFuncExpr = function (definition) {
-        /**
-         * Representation of an xpath function expression.
-         */
-        this.id = definition.id;                 //name of the function
-        this.args = definition.args || [];       //argument list
-        this.toString = function() {
-            var stringArray = [];
-            stringArray.push("{func-expr:", String(this.id), ",{");
-            stringArray.push(this.args.join(","));
-            stringArray.push("}}");
-            return stringArray.join("");
-        };
-        function _combine (transFunc) {
-            return function () {
-                return this.id + "(" + this.args.map(transFunc).join(", ") + ")";
-            };
+        public getChildren() {
+            return this.predicates;
         }
-        this.toXPath = _combine(objToXPath);
-        this.toHashtag = objToHashtagWithCombine(this, _combine);
-        this.getChildren = function () {
-           return this.args;
-        };
-        return this;
-    };
 
-    xpm.XPathFilterExpr = function (definition) {
-        /**
-         * Representation of an xpath filter expression.
-         */
-        this.expr = definition.expr;
-        this.predicates = definition.predicates || [];
-        this.toString = function() {
-            var stringArray = [];
-            stringArray.push("{filt-expr:", this.expr.toString(), ",{");
-            stringArray.push(this.predicates.join(","));
-            stringArray.push("}}");
-            return stringArray.join("");
-        };
-        function _combine(transFunc) {
-            return function() {
-                var predicates = "";
-                if (this.predicates.length > 0) {
-                    predicates = "[" + this.predicates.map(transFunc).join("][") + "]";
-                }
-                var expr = objToXPath(this.expr);
-                // FIXME should all non-function expressions be parenthesized?
-                if (!(this.expr instanceof xpm.XPathFuncExpr)) {
-                    expr = "(" + expr + ")";
-                }
-                return expr + predicates;
-            };
+        public toString() {
+            return `{filt-expr:${this.properties.expr.toString()},{${this.predicates.join(',')}}}`;
         }
-        this.toXPath = _combine(objToXPath);
-        this.toHashtag = objToHashtagWithCombine(this, _combine);
-        this.getChildren = function () {
-           return this.predicates;
-        };
-        return this;
-    };
 
-    xpm.HashtagExpr = function (definition) {
-        /**
-         * an extension of xpath that's not really an xpath
-         */
-        var self = this;
-        this.initial_context = definition.initial_context;
-        if (!hashtagConfig.isValidNamespace(definition.namespace)) {
-            throw new Error(definition.namespace + " is not a valid # expression");
+        public toHashtag(): string {
+            return CurrentHashtagConfig.toHashtag(this) || this.combine(part => part.toHashtag());
         }
-        this.namespace = definition.namespace;
-        this.steps = definition.steps || [];
-        this.toString = function() {
-            var stringArray = [];
-            stringArray.push("{hashtag-expr:");
-            stringArray.push(this.namespace);
-            stringArray.push(",{");
-            stringArray.push(this.steps.join(","));
-            stringArray.push("}}");
-            return stringArray.join("");
-        };
-        var _combine = function () {
-            var parts = [self.namespace].concat(self.steps),
-                ret = [];
-            for (var i = 0; i < parts.length; i ++) {
+
+        public toXPath(): string {
+            return this.combine(part => part.toXPath());
+        }
+    }
+
+    export class XPathHashtagExpression implements IXPathExpression {
+        public initialContext: XPathInitialContextEnum;
+        public namespace: string;
+        public steps: XPathStep[];
+        public type: 'hashtag' = 'hashtag';
+
+        constructor(definition: {
+            initialContext: XPathInitialContextEnum,
+            namespace: string,
+            steps: XPathStep[] | null
+        }) {
+            if (!CurrentHashtagConfig.isValidNamespace(definition.namespace)) {
+                throw new Error(definition.namespace + " is not a valid # expression");
+            }
+            this.initialContext = definition.initialContext;
+            this.namespace = definition.namespace;
+            this.steps = definition.steps || [];
+        }
+
+        public toString() {
+            return `{hashtag-expr:${this.namespace},{${this.steps.join(",")}}}`;
+        }
+
+        public toXPath() {
+            return CurrentHashtagConfig.hashtagToXPath(this.toHashtag()) || "";
+        }
+
+        public toHashtag() {
+            let parts = [this.namespace].concat(this.steps.map(step => step.toString())),
+                ret: string[] = [];
+            for (let i = 0; i < parts.length; i++) {
                 // hashtag to start then /
                 ret.push((i === 0) ? '#' : "/");
                 ret.push(parts[i]);
             }
             return ret.join("");
-        };
-        this.toXPath = function () {
-            return hashtagConfig.hashtagToXPath(this.toHashtag());
-        };
-        this.toHashtag = _combine;
-        this.getChildren = function () {
-           return [];
-        };
-
-        return this;
-    };
-
-    // expressions
-    xpm.XPathExpressionTypeEnum = {
-        /*
-         * These aren't yet really used anywhere, but they are correct.
-         * They correlate with the "type" field in the parser for ops.
-         *
-         */
-        AND: "and",
-        OR: "or",
-        EQ: "==",
-        NEQ: "!=",
-        LT: "<",
-        LTE: "<=",
-        GT: ">",
-        GTE: ">=",
-        PLUS: "+",
-        MINUS: "-",
-        MULT: "*",
-        DIV: "/",
-        MOD: "%",
-        UMINUS: "num-neg",
-        UNION: "union"
-    };
-
-    var expressionTypeEnumToXPathLiteral = xpm.expressionTypeEnumToXPathLiteral = function (val) {
-        switch (val) {
-            case xpm.XPathExpressionTypeEnum.EQ:
-                return "=";
-            case xpm.XPathExpressionTypeEnum.MOD:
-                return "mod";
-            case xpm.XPathExpressionTypeEnum.DIV:
-                return "div";
-            case xpm.XPathExpressionTypeEnum.UMINUS:
-                return "-";
-            case xpm.XPathExpressionTypeEnum.UNION:
-                return "|";
-            default:
-                return val;
         }
-    };
-
-    var binOpToString = function() {
-        return "{binop-expr:" + this.type + "," + String(this.left) + "," + String(this.right) + "}";
-    };
-
-    var isOp = xpm.isOp = function(someToken) {
-        /*
-         * Whether something is an operation
-         */
-        // this is probably breaking an abstraction layer.
-        var str = someToken.toString();
-        return str.indexOf("{binop-expr:") === 0 || str.indexOf("{unop-expr:") === 0;
-    };
-
-    var isLiteral = xpm.isLiteral = function(someToken) {
-        return (someToken instanceof xpm.XPathNumericLiteral ||
-                someToken instanceof xpm.XPathStringLiteral ||
-                someToken instanceof xpm.XPathPathExpr);
-    };
-
-    var isSimpleOp = xpm.isSimpleOp = function(someToken) {
-        return isOp(someToken) && isLiteral(someToken.left) && isLiteral(someToken.right);
-    };
-
-    function printBinOp (func) {
-        return function () {
-            var ret = func(this.left) + " " + expressionTypeEnumToXPathLiteral(this.type) + " " + func(this.right);
-            if (this.parens === true) {
-                return "(" + ret + ")";
-            }
-            return ret;
-        };
     }
 
-    var binOpToXPath = printBinOp(objToXPath);
-    var binOpToHashtag = printBinOp(objToHashtag);
+    /*
+     * Literals
+     */
+    export type XPathLiteral = XPathStringLiteral | XPathNumericLiteral;
+    export class XPathStringLiteral implements IXPathExpression {
+        type: 'string' = 'string';
+        value: string;
+        private stringDelimiter: string;
 
-    var binOpChildren = function () {
-        return [this.left, this.right];
-    };
-
-    xpm.XPathBoolExpr = function(definition) {
-        this.type = definition.type;
-        this.left = definition.left;
-        this.right = definition.right;
-        this.toString = binOpToString;
-        this.toXPath = binOpToXPath;
-        this.toHashtag = binOpToHashtag.bind(this);
-        this.getChildren = binOpChildren;
-        return this;
-    };
-
-    xpm.XPathEqExpr = function(definition) {
-        this.type = definition.type;
-        this.left = definition.left;
-        this.right = definition.right;
-        this.toString = binOpToString;
-        this.toXPath = binOpToXPath;
-        this.toHashtag = binOpToHashtag.bind(this);
-        this.getChildren = binOpChildren;
-        return this;
-    };
-
-    xpm.XPathCmpExpr = function(definition) {
-        this.type = definition.type;
-        this.left = definition.left;
-        this.right = definition.right;
-        this.toString = binOpToString;
-        this.toXPath = binOpToXPath;
-        this.toHashtag = binOpToHashtag.bind(this);
-        this.getChildren = binOpChildren;
-        return this;
-    };
-
-    xpm.XPathArithExpr = function(definition) {
-        this.type = definition.type;
-        this.left = definition.left;
-        this.right = definition.right;
-        this.toString = binOpToString;
-        this.toXPath = binOpToXPath;
-        this.toHashtag = binOpToHashtag.bind(this);
-        this.getChildren = binOpChildren;
-        return this;
-    };
-
-    xpm.XPathUnionExpr = function(definition) {
-        this.type = definition.type;
-        this.left = definition.left;
-        this.right = definition.right;
-        this.toString = binOpToString;
-        this.toXPath = binOpToXPath;
-        this.toHashtag = binOpToHashtag.bind(this);
-        this.getChildren = binOpChildren;
-        return this;
-    };
-
-    xpm.XPathNumNegExpr = function(definition) {
-        this.type = definition.type;
-        this.value = definition.value;
-        this.toString = function() {
-            return "{unop-expr:" + this.type + "," + String(this.value) + "}";
-        };
-        function _combine(transFunc) {
-            return function() {
-                return "-" + transFunc(this.value);
-            };
+        constructor(value: string, public location: ParseLocation) {
+            this.stringDelimiter = value[0];
+            this.value = value.substr(1, value.length - 2);
         }
-        this.toXPath = _combine(objToXPath);
-        this.toHashtag = _combine(objToHashtag);
-        this.getChildren = function () {
-           return [this.value];
-        };
-        return this;
-    };
 
-    return xpm;
-};
+        private get valueDisplay() {
+            return `${this.stringDelimiter}${this.value}${this.stringDelimiter}`;
+        }
 
-if (typeof require !== 'undefined' && typeof exports !== 'undefined') {
-    exports.makeXPathModels = makeXPathModels;
+        public toString() {
+            return "{str:" + this.valueDisplay + "}";
+        }
+
+        public toHashtag() {
+            return this.valueDisplay;
+        }
+
+        public toXPath() {
+            return this.valueDisplay;
+        }
+    }
+
+    export class XPathNumericLiteral implements IXPathExpression {
+        type: 'numeric' = 'numeric';
+        value: BigNumber;
+        /**
+         * @param value the string representation of the number as found in the XPATH
+         */
+        constructor(value: string, public location: ParseLocation) {
+            this.value = new BigNumber(value);
+        }
+
+        public toString() {
+            return "{num:" + this.value.toString() + "}";
+        }
+
+        public toHashtag() {
+            return this.toXPath();
+        }
+
+        public toXPath() {
+            return this.value.toFixed();
+        }
+    }
+
+    export class ParseLocation {
+        /**
+         * One-based character offset
+         */
+        public firstColumn: number;
+        /**
+         * One-based line number
+         */
+        public firstLine: number;
+        /**
+         * One-based last column, inclusive.
+         */
+        public lastColumn: number;
+        /**
+         * One-based last line number, inclusive.
+         */
+        public lastLine: number;
+
+        constructor(properties: {
+            first_column: number,
+            first_line: number,
+            last_column: number,
+            last_line: number
+        }[]) {
+            let current = properties[properties.length - 1];
+            this.firstColumn = current.first_column;
+            this.firstLine = current.first_line;
+            this.lastColumn = current.last_column;
+            this.lastLine = current.last_line;
+        }
+    }
 }

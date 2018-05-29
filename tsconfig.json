@@ -1,0 +1,18 @@
+{
+    "compilerOptions": {
+        "target": "ES5",
+        "module": "commonjs",
+        "declaration": true,
+        "noFallthroughCasesInSwitch": true,
+        "noImplicitAny": true,
+        "noImplicitUseStrict": true,
+        "noImplicitReturns": true,
+        "outDir": "./dist"
+    },
+    "exclude": [
+        "dist",
+        "node_modules",
+        ".npm",
+        "**/*.spec.ts"
+    ]
+}
