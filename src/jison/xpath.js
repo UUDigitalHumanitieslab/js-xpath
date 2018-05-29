@@ -310,7 +310,9 @@ case 64:
  this.$ = {"test": yy.xpathModels.XPathTestEnum.TYPE_PROCESSING_INSTRUCTION, "literal": null}; 
 break;
 case 65:
- this.$ = {"test": yy.xpathModels.XPathTestEnum.TYPE_PROCESSING_INSTRUCTION, "literal": $$[$0-1]}; 
+ 
+                this.$ = {"test": yy.xpathModels.XPathTestEnum.TYPE_PROCESSING_INSTRUCTION,
+                "literal": new yy.xpathModels.XPathStringLiteral($$[$0-1], new yy.xpathModels.ParseLocation(_$, -2))}; 
 break;
 case 66:
  this.$ = new yy.xpathModels.XPathStringLiteral($$[$0], new yy.xpathModels.ParseLocation(_$)); 
