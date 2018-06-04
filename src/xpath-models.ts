@@ -111,28 +111,80 @@ export module XPathModels {
         TYPE_PROCESSING_INSTRUCTION = "processing-instruction"
     }
 
-    export type XPathToken = {
-        expression: IXPathExpression,
-        text: string,
-        type: 'attribute.sigil' |
-        'bracket.left' |
-        'bracket.right' |
-        'function.name' |
-        'function.separator' |
-        'namespace' |
-        'negation' |
-        'node.name' |
-        'numeric' |
-        'operator' |
-        'paren.left' |
-        'paren.right' |
-        'path' |
-        'string.delimiter' |
-        'string.value' |
-        'variable.sigil' |
-        'variable.value' |
-        'whitespace';
-    }
+    export type XPathToken = ({
+        text: string
+    } & (
+            {
+                expression: XPathStep,
+                type: 'attribute.sigil'
+            } |
+            {
+                expression: IXPathExpression,
+                type: 'bracket.left' | 'bracket.right'
+            } |
+            {
+                expression: XPathFuncExpr | XPathStep,
+                type: 'function.name'
+            } |
+            {
+                expression: IXPathExpression,
+                type: 'function.separator'
+            } |
+            {
+                expression: XPathStep | XPathHashtagExpression,
+                type: 'namespace'
+            } |
+            {
+                expression: XPathNumNegExpr,
+                type: 'negation'
+            } |
+            {
+                expression: XPathStep,
+                type: 'node.name'
+            } |
+            {
+                expression: XPathNumericLiteral,
+                type: 'numeric'
+            } |
+            {
+                expression: IXPathExpression,
+                type: 'operator'
+            } |
+            {
+                expression: IXPathExpression,
+                type: 'paren.left'
+            } |
+            {
+                expression: IXPathExpression,
+                type: 'paren.right'
+            } | {
+                expression: XPathHashtagExpression,
+                type: 'hashtag'
+            } |
+            {
+                expression: XPathPathExpr | XPathStep,
+                type: 'path'
+            } |
+            {
+                expression: XPathStringLiteral,
+                type: 'string.delimiter'
+            } |
+            {
+                expression: XPathStringLiteral,
+                type: 'string.value'
+            } |
+            {
+                expression: XPathVariableReference,
+                type: 'variable.sigil'
+            } |
+            {
+                expression: XPathVariableReference,
+                type: 'variable.value'
+            } |
+            {
+                expression: IXPathExpression,
+                type: 'whitespace'
+            }));
 
     export interface IXPathExpression {
         toHashtag(): string;
@@ -632,7 +684,7 @@ export module XPathModels {
             return CurrentHashtagConfig.toHashtag(this) || this.combine(false, part => part.toHashtag());
         }
 
-        public toTokens(expandHashtags = true) {
+        public toTokens(expandHashtags = true): XPathToken[] {
             return [... this.mainTokens(expandHashtags), ...this.brackets(this.predicates, expandHashtags)];
         }
 
@@ -743,12 +795,12 @@ export module XPathModels {
                 tokens.push({
                     expression: this,
                     text: (i === 0) ? '#' : "/",
-                    type: 'path'
+                    type: 'hashtag'
                 });
                 tokens.push({
                     expression: this,
                     text: step,
-                    type: 'path'
+                    type: 'hashtag'
                 });
             }
             return tokens;
