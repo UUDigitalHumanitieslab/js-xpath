@@ -193,6 +193,7 @@ export module XPathModels {
     }
 
     export abstract class XPathExpressionBase implements IXPathExpression {
+        public parens: boolean;
         abstract toHashtag(): string;
         toXPath() {
             return this.toTokens(true).map(t => t.text).join('');
@@ -677,7 +678,7 @@ export module XPathModels {
                     }
                     break;
             }
-            return [...axisPrefix, ... this.testTokens(expandHashtags)];
+            return [...axisPrefix, ...this.testTokens(expandHashtags)];
         }
 
         public toHashtag(): string {
@@ -745,7 +746,7 @@ export module XPathModels {
             let tokens: XPathToken[] = [];
 
             let expr = this.properties.expr.toTokens(expandHashtags);
-            if (!(this.properties.expr instanceof XPathFuncExpr)) {
+            if (!(this.properties.expr instanceof XPathFuncExpr) && this.properties.expr.parens) {
                 expr = [
                     { expression: this, text: "(", type: 'paren.left' },
                     ...expr,

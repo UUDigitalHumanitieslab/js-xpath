@@ -42,7 +42,8 @@ describe('XPath Annotate', () => {
             "- 4 * 6",
             "6*(3+4)and(5or2)",
             "(1 - 2) - 3",
-            "1 - (2 - 3)"
+            "1 - (2 - 3)",
+            '$node3/node[@rel = "hd" and @pt = "n"]'
         ]);
     });
 });
