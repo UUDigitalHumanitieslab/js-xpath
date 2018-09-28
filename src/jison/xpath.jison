@@ -159,6 +159,19 @@ loc_path:   rel_loc_path                    { $$ = new yy.xpathModels.XPathPathE
         ;
 
 rel_loc_path: step                        { $$ = [$1];}
+        |   rel_loc_path SLASH func_call { 
+                // placed here instead of in node_test/step_body because
+                // there this expression results in an ambiguous parser
+                var nodeTest = {
+                        axis: yy.xpathModels.XPathAxisEnum.CHILD,
+                        test: yy.xpathModels.XPathTestEnum.TYPE_FUNCTION,
+                        predicates: [$3],
+                        location: new yy.xpathModels.ParseLocation(_$)
+                };
+                var path = $1;
+                path.push(new yy.xpathModels.XPathStep(nodeTest));
+                $$ = path;
+        }
         |   rel_loc_path SLASH step       { var path = $1;
                                             path.push($3);
                                             $$ = path; }

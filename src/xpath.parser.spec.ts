@@ -20,6 +20,7 @@ describe('XPath Parser', () => {
                 try {
                     expect(parser.parse(i).toString()).toEqual(testCases[i], "" + i + " parsed correctly.");
                 } catch (err) {
+                    console.error(err);
                     fail("" + err + " for input: " + i);
                 }
             }
@@ -155,9 +156,9 @@ describe('XPath Parser', () => {
     it("parses operator using precedence", function () {
         runCommon({
             "1 < 2 = 3 > 4 and 5 <= 6 != 7 >= 8 or 9 and 10":
-            "{binop-expr:or,{binop-expr:and,{binop-expr:==,{binop-expr:<,{num:1},{num:2}},{binop-expr:>,{num:3},{num:4}}},{binop-expr:!=,{binop-expr:<=,{num:5},{num:6}},{binop-expr:>=,{num:7},{num:8}}}},{binop-expr:and,{num:9},{num:10}}}",
+                "{binop-expr:or,{binop-expr:and,{binop-expr:==,{binop-expr:<,{num:1},{num:2}},{binop-expr:>,{num:3},{num:4}}},{binop-expr:!=,{binop-expr:<=,{num:5},{num:6}},{binop-expr:>=,{num:7},{num:8}}}},{binop-expr:and,{num:9},{num:10}}}",
             "1 * 2 + 3 div 4 < 5 mod 6 | 7 - 8":
-            "{binop-expr:<,{binop-expr:+,{binop-expr:*,{num:1},{num:2}},{binop-expr:/,{num:3},{num:4}}},{binop-expr:-,{binop-expr:%,{num:5},{binop-expr:union,{num:6},{num:7}}},{num:8}}}",
+                "{binop-expr:<,{binop-expr:+,{binop-expr:*,{num:1},{num:2}},{binop-expr:/,{num:3},{num:4}}},{binop-expr:-,{binop-expr:%,{num:5},{binop-expr:union,{num:6},{num:7}}},{num:8}}}",
             "- 4 * 6": "{binop-expr:*,{unop-expr:num-neg,{num:4}},{num:6}}",
             "6*(3+4)and(5or2)": "{binop-expr:and,{binop-expr:*,{num:6},{binop-expr:+,{num:3},{num:4}}},{binop-expr:or,{num:5},{num:2}}}",
         });
@@ -293,6 +294,12 @@ describe('XPath Parser', () => {
             "//": null,
         });
     });
+
+    it("parses paths containing functions", function () {
+        runCommon({
+            '//node[4 > node[@rel="--" and @pt="let"]/number(@begin)]': '{path-expr:abs,{{step:descendant-or-self,node()},{step:child,node,{{binop-expr:>,{num:4},{path-expr:rel,{{step:child,node,{{binop-expr:and,{binop-expr:==,{path-expr:rel,{{step:attribute,rel}}},{str:"--"}},{binop-expr:==,{path-expr:rel,{{step:attribute,pt}}},{str:"let"}}}}},{step:child,,{{func-expr:number,{{path-expr:rel,{{step:attribute,begin}}}}}}}}}}}}}}'
+        });
+    })
 
     it("parses real world examples", function () {
         runCommon({
