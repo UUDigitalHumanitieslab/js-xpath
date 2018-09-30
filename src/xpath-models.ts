@@ -108,6 +108,7 @@ export module XPathModels {
         TYPE_NODE = "node()",
         TYPE_TEXT = "text()",
         TYPE_COMMENT = "comment()",
+        TYPE_FUNCTION = "function()",
         TYPE_PROCESSING_INSTRUCTION = "processing-instruction"
     }
 
@@ -598,6 +599,10 @@ export module XPathModels {
                         text: ":*",
                         type: 'path'
                     }];
+                case XPathTestEnum.TYPE_FUNCTION:
+                    // path token (slash) is already added when combining
+                    // the paths in XPathPathExpr
+                    return [];
                 default:
                     return this.properties.test ? [{
                         expression: this,
@@ -686,6 +691,9 @@ export module XPathModels {
         }
 
         public toTokens(expandHashtags = true): XPathToken[] {
+            if (this.properties.test == XPathTestEnum.TYPE_FUNCTION && this.predicates.length == 1) {
+                return [... this.mainTokens(expandHashtags), ...this.predicates[0].toTokens(expandHashtags)];
+            }
             return [... this.mainTokens(expandHashtags), ...this.brackets(this.predicates, expandHashtags)];
         }
 

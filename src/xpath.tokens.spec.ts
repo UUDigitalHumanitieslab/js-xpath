@@ -192,6 +192,39 @@ describe('XPath Tokens', () => {
         });
     });
 
+    it("parses paths containing functions", function () {
+        runCommon({
+            '//node[4 > node[@rel="--" and @pt="let"]/number(@begin)]': ['path',
+                'node.name',
+                'bracket.left',
+                'numeric',
+                'operator',
+                'node.name',
+                'bracket.left',
+                'attribute.sigil',
+                'node.name',
+                'operator',
+                'string.delimiter',
+                'string.value',
+                'string.delimiter',
+                'operator',
+                'attribute.sigil',
+                'node.name',
+                'operator',
+                'string.delimiter',
+                'string.value',
+                'string.delimiter',
+                'bracket.right',
+                'path',
+                'function.name',
+                'paren.left',
+                'attribute.sigil',
+                'node.name',
+                'paren.right',
+                'bracket.right']
+        });
+    })
+
     // TODO: just one more to go!
     // it("parses real world examples", function () {
     //     runCommon({
