@@ -29,6 +29,7 @@ WhiteSpace          (\s+)
 Digit               [0-9]
 Letter              [A-Za-z]
 NameStartChar       [A-Za-z_]
+NotNameStartChar    [^A-Za-z_]
 NameTrailChar       [A-Za-z0-9._-]
 NCName              [A-Za-z_][A-Za-z0-9._-]*
 QName               [A-Za-z_][A-Za-z0-9._-]*(":"[A-Za-z_][A-Za-z0-9._-]*)?
@@ -54,10 +55,10 @@ QName               [A-Za-z_][A-Za-z0-9._-]*(":"[A-Za-z_][A-Za-z0-9._-]*)?
 <VAL_CONTEXT,INITIAL>"*"           { this.begin("OP_CONTEXT"); yy.xpathModels.debugLog("WILDCARD", yytext); return "WILDCARD"; }
 
 <OP_CONTEXT>"*"                    { this.begin("VAL_CONTEXT"); yy.xpathModels.debugLog("MULT", yytext); return "MULT"; }
-<OP_CONTEXT>("and")                  { this.begin("VAL_CONTEXT"); yy.xpathModels.debugLog("AND", yytext); return "AND"; }
-<OP_CONTEXT>("or")                   { this.begin("VAL_CONTEXT"); yy.xpathModels.debugLog("OR", yytext); return "OR"; }
-<OP_CONTEXT>("div")                  { this.begin("VAL_CONTEXT"); yy.xpathModels.debugLog("DIV", yytext); return "DIV"; }
-<OP_CONTEXT>("mod")                  { this.begin("VAL_CONTEXT"); yy.xpathModels.debugLog("MOD", yytext); return "MOD"; }
+<OP_CONTEXT>("and"/{NotNameStartChar})                  { this.begin("VAL_CONTEXT"); yy.xpathModels.debugLog("AND", yytext); return "AND"; }
+<OP_CONTEXT>("or"/{NotNameStartChar})                   { this.begin("VAL_CONTEXT"); yy.xpathModels.debugLog("OR", yytext); return "OR"; }
+<OP_CONTEXT>("div"/{NotNameStartChar})                  { this.begin("VAL_CONTEXT"); yy.xpathModels.debugLog("DIV", yytext); return "DIV"; }
+<OP_CONTEXT>("mod"/{NotNameStartChar})                  { this.begin("VAL_CONTEXT"); yy.xpathModels.debugLog("MOD", yytext); return "MOD"; }
 
 <*>({Digit}+("."{Digit}*)?|("."{Digit}+))             { this.begin("OP_CONTEXT"); yy.xpathModels.debugLog("NUM", yytext); return "NUM"; }
 

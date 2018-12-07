@@ -118,7 +118,7 @@ describe('XPath Parser', () => {
             "3mod4": "{binop-expr:%,{num:3},{num:4}}",
             "3 mod6": "{binop-expr:%,{num:3},{num:6}}",
             "3mod 7": "{binop-expr:%,{num:3},{num:7}}",
-            "5 divseparate-token": "{binop-expr:/,{num:5},{path-expr:rel,{{step:child,separate-token}}}}", //not quite sure if this is legal xpath or not, but it *can* be parsed unambiguously
+            "5 div separate-token": "{binop-expr:/,{num:5},{path-expr:rel,{{step:child,separate-token}}}}",
             "5 = 5": "{binop-expr:==,{num:5},{num:5}}",
             "5 != 5": "{binop-expr:!=,{num:5},{num:5}}",
             "5 < 5": "{binop-expr:<,{num:5},{num:5}}",
@@ -175,7 +175,7 @@ describe('XPath Parser', () => {
             "function(   )": "{func-expr:function,{}}",
             "function (5)": "{func-expr:function,{{num:5}}}",
             "function   ( 5, 'arg', 4 * 12)": "{func-expr:function,{{num:5},{str:'arg'},{binop-expr:*,{num:4},{num:12}}}}",
-            "4andfunc()": "{binop-expr:and,{num:4},{func-expr:func,{}}}",
+            "4and func()": "{binop-expr:and,{num:4},{func-expr:func,{}}}",
         });
         runFailures({
             "function ( 4, 5, 6 ": null,
@@ -285,13 +285,23 @@ describe('XPath Parser', () => {
             "/": "{path-expr:abs,{}}",
             "//all": "{path-expr:abs,{{step:descendant-or-self,node()},{step:child,all}}}",
             "a/.//../z": "{path-expr:rel,{{step:child,a},{step:self,node()},{step:descendant-or-self,node()},{step:parent,node()},{step:child,z}}}",
-            "6andpath": "{binop-expr:and,{num:6},{path-expr:rel,{{step:child,path}}}}",
+            "6and path": "{binop-expr:and,{num:6},{path-expr:rel,{{step:child,path}}}}",
 
         });
         runFailures({
             "rel/ative/path/": null,
             "filter-expr/(must-come)['first']": null,
             "//": null,
+        });
+    });
+
+    it("parses node tests containing operators in their names", () => {
+        runCommon({
+            "order[mode and division]": "{path-expr:rel,{{step:child,order,{{binop-expr:and,{path-expr:rel,{{step:child,mode}}},{path-expr:rel,{{step:child,division}}}}}}}}",
+            '//android[mode[@test]]': "{path-expr:abs,{{step:descendant-or-self,node()},{step:child,android,{{path-expr:rel,{{step:child,mode,{{path-expr:rel,{{step:attribute,test}}}}}}}}}}}",            
+        })
+        runFailures({
+            '//node[node andnode]': null
         });
     });
 

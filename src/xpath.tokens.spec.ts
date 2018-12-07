@@ -73,7 +73,7 @@ describe('XPath Tokens', () => {
             "3mod4": ["numeric", "operator", "numeric"],
             "3 mod6": ["numeric", "operator", "numeric"],
             "3mod 7": ["numeric", "operator", "numeric"],
-            "5 divseparate-token": ["numeric", "operator", "node.name"],
+            "5 div separate-token": ["numeric", "operator", "node.name"],
             "5 = 5": ["numeric", "operator", "numeric"],
             "5 != 5": ["numeric", "operator", "numeric"],
             "5 < 5": ["numeric", "operator", "numeric"],
@@ -93,7 +93,7 @@ describe('XPath Tokens', () => {
             "function(   )": ["function.name", "paren.left", "paren.right"],
             "function (5)": ["function.name", "paren.left", "numeric", "paren.right"],
             "function   ( 5, 'arg', 4 * 12)": ["function.name", "paren.left", "numeric", "function.separator", "string.delimiter", "string.value", "string.delimiter", "function.separator", "numeric", "operator", "numeric", "paren.right"],
-            "4andfunc()": ["numeric", "operator", "function.name", "paren.left", "paren.right"],
+            "4and func()": ["numeric", "operator", "function.name", "paren.left", "paren.right"],
         });
     });
 
@@ -188,7 +188,7 @@ describe('XPath Tokens', () => {
             "/": ["path"],
             "//all": ["path", "node.name"],
             "a/.//../z": ["node.name", "path", "path", "path", "path", "path", "node.name"],
-            "6andpath": ["numeric", "operator", "node.name"]
+            "6and path": ["numeric", "operator", "node.name"]
         });
     });
 

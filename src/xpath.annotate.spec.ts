@@ -36,7 +36,7 @@ describe('XPath Annotate', () => {
             "function(   )",
             "function (5)",
             "function   ( 5, 'arg', 4 * 12)",
-            "4andfunc()",
+            "4and func()",
             "1 < 2 = 3 > 4 and 5 <= 6 != 7 >= 8 or 9 and 10",
             "1 * 2 + 3 div 4 < 5 mod 6 | 7 - 8",
             "- 4 * 6",

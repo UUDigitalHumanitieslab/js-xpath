@@ -88,7 +88,7 @@ describe('XPath Generators', () => {
             "3mod4": "3 mod 4",
             "3 mod6": "3 mod 6",
             "3mod 7": "3 mod 7",
-            "5 divseparate-token": "5 div separate-token", //not quite sure if this is legal xpath or not, but it *can* be parsed unambiguously
+            "5 div separate-token": "5 div separate-token",
             "5 = 5": "5 = 5",
             "5 != 5": "5 != 5",
             "5 < 5": "5 < 5",
@@ -132,7 +132,7 @@ describe('XPath Generators', () => {
             "function(   )": "function()",
             "function (5)": "function(5)",
             "function   ( 5, 'arg', 4 * 12)": "function(5, 'arg', 4 * 12)",
-            "4andfunc()": "4 and func()",
+            "4and func()": "4 and func()",
         });
     });
 
@@ -211,7 +211,7 @@ describe('XPath Generators', () => {
             "/": "/",
             "//all": "//all",
             "a/.//../z": "a/.//../z",
-            "6andpath": "6 and path",
+            "6and path": "6 and path",
         });
     });
 
