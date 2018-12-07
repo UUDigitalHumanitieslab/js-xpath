@@ -225,13 +225,78 @@ describe('XPath Tokens', () => {
         });
     })
 
-    // TODO: just one more to go!
-    // it("parses real world examples", function () {
-    //     runCommon({
-    //         "/foo/bar = 2.0": "{binop-expr:==,{path-expr:abs,{{step:child,foo},{step:child,bar}}},{num:2}}",
-    //         "/patient/sex = 'male' and /patient/age > 15": "{binop-expr:and,{binop-expr:==,{path-expr:abs,{{step:child,patient},{step:child,sex}}},{str:'male'}},{binop-expr:>,{path-expr:abs,{{step:child,patient},{step:child,age}}},{num:15}}}",
-    //         "../jr:hist-data/labs[@type=\"cd4\"]": "{path-expr:rel,{{step:parent,node()},{step:child,jr:hist-data},{step:child,labs,{{binop-expr:==,{path-expr:rel,{{step:attribute,type}}},{str:\"cd4\"}}}}}}",
-    //         "function_call(26*(7+3), //*, /im/child::an/ancestor::x[3][true()]/path)": "{func-expr:function_call,{{binop-expr:*,{num:26},{binop-expr:+,{num:7},{num:3}}},{path-expr:abs,{{step:descendant-or-self,node()},{step:child,*}}},{path-expr:abs,{{step:child,im},{step:child,an},{step:ancestor,x,{{num:3},{func-expr:true,{}}}},{step:child,path}}}}}"
-    //     });
-    // });
+    it("parses real world examples", function () {
+        runCommon({
+            "/foo/bar = 2.0": [
+                'path',
+                'node.name',
+                'path',
+                'node.name',
+                'operator',
+                'numeric'],
+            "/patient/sex = 'male' and /patient/age > 15": [
+                'path',
+                'node.name',
+                'path',
+                'node.name',
+                'operator',
+                'string.delimiter',
+                'string.value',
+                'string.delimiter',
+                'operator',
+                'path',
+                'node.name',
+                'path',
+                'node.name',
+                'operator',
+                'numeric'],
+            "../jr:hist-data/labs[@type=\"cd4\"]": [
+                'path',
+                'path',
+                'node.name',
+                'path',
+                'node.name',
+                'bracket.left',
+                'attribute.sigil',
+                'node.name',
+                'operator',
+                'string.delimiter',
+                'string.value',
+                'string.delimiter',
+                'bracket.right'],
+            "function_call(26*(7+3), //*, /im/child::an/ancestor::x[3][true()]/path)": [
+                'function.name',
+                'paren.left',
+                'numeric',
+                'operator',
+                'paren.left',
+                'numeric',
+                'operator',
+                'numeric',
+                'paren.right',
+                'function.separator',
+                'path',
+                'path',
+                'function.separator',
+                'path',
+                'node.name',
+                'path',
+                'node.name',
+                'path',
+                'path',
+                'operator',
+                'node.name',
+                'bracket.left',
+                'numeric',
+                'bracket.right',
+                'bracket.left',
+                'function.name',
+                'paren.left',
+                'paren.right',
+                'bracket.right',
+                'path',
+                'node.name',
+                'paren.right']
+        });
+    });
 });
